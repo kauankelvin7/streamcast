@@ -1,0 +1,104 @@
+import type { TMDBMovie, TMDBTVShow } from '../types';
+
+const TMDB_API_KEY = '15d2ea6d0dc1d476efbca3eba2b9bbfb'; // Chave pública de exemplo - usuário pode trocar depois
+
+export async function searchMovies(query: string): Promise<TMDBMovie[]> {
+  if (!query.trim()) return [];
+  
+  try {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`
+    );
+    
+    if (!response.ok) throw new Error('Erro na busca');
+    
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error('Erro ao buscar filmes:', error);
+    return [];
+  }
+}
+
+export async function searchTVShows(query: string): Promise<TMDBTVShow[]> {
+  if (!query.trim()) return [];
+  
+  try {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`
+    );
+    
+    if (!response.ok) throw new Error('Erro na busca');
+    
+    const data = await response.json();
+    return data.results || [];
+  } catch (error) {
+    console.error('Erro ao buscar séries:', error);
+    return [];
+  }
+}
+
+export function getTMDBPosterUrl(path: string | null, size: 'w200' | 'w500' = 'w200'): string {
+  if (!path) return 'https://via.placeholder.com/200x300?text=Sem+Poster';
+  return `https://image.tmdb.org/t/p/${size}${path}`;
+}
+
+export async function getMovieExternalIds(tmdbId: number): Promise<{ imdb_id: string | null }> {
+  try {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`
+    );
+    
+    if (!response.ok) throw new Error('Erro ao buscar IDs externos');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro ao buscar IMDB ID:', error);
+    return { imdb_id: null };
+  }
+}
+
+export async function getTVExternalIds(tmdbId: number): Promise<{ imdb_id: string | null }> {
+  try {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${tmdbId}/external_ids?api_key=${TMDB_API_KEY}`
+    );
+    
+    if (!response.ok) throw new Error('Erro ao buscar IDs externos');
+    
+    return await response.json();
+  } catch (error) {
+    console.error('Erro ao buscar IMDB ID:', error);
+    return { imdb_id: null };
+  }
+}
+
+// Mapeamento de IDs de gêneros do TMDB para tags em português
+const TMDB_GENRE_MAP: Record<number, string> = {
+  28: 'Ação',
+  12: 'Aventura',
+  16: 'Animação',
+  35: 'Comédia',
+  80: 'Crime',
+  99: 'Documentário',
+  18: 'Drama',
+  10751: 'Família',
+  14: 'Fantasia',
+  36: 'História',
+  27: 'Terror',
+  10402: 'Música',
+  9648: 'Mistério',
+  10749: 'Romance',
+  878: 'Ficção Científica',
+  10770: 'TV',
+  53: 'Thriller',
+  10752: 'Guerra',
+  37: 'Faroeste'
+};
+
+export function mapGenreIdsToTags(genreIds?: number[]): string[] {
+  if (!genreIds || genreIds.length === 0) return [];
+  return genreIds
+    .map(id => TMDB_GENRE_MAP[id])
+    .filter(Boolean);
+}
