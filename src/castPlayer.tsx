@@ -109,15 +109,15 @@ export default function CastPlayerApp() {
       
       <button
         onClick={() => setShowAdmin(true)}
-        className="absolute top-4 right-4 px-4 py-2 bg-[#121212] border border-[#00bfa6]/50 text-[#00bfa6] rounded-lg font-semibold hover:bg-[#1e1e1e] hover:border-[#00bfa6] z-40 flex items-center gap-2 transition-colors duration-150"
+        className="absolute top-2 right-2 sm:top-4 sm:right-4 px-3 py-2 sm:px-4 bg-[#121212] border border-[#00bfa6]/50 text-[#00bfa6] rounded-lg font-semibold hover:bg-[#1e1e1e] hover:border-[#00bfa6] z-40 flex items-center gap-2 transition-colors duration-150 text-sm sm:text-base"
       >
-        <Settings className="w-5 h-5" />
-        Admin
+        <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+        <span className="hidden sm:inline">Admin</span>
       </button>
       
       {currentVideo && showVideoInfo && (
-        <div className="absolute bottom-4 left-4 px-4 py-2 bg-black/90 text-white rounded-lg z-40 transition-opacity duration-500">
-          <p className="font-semibold">{currentVideo.title}</p>
+        <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-auto px-3 py-2 sm:px-4 bg-black/90 text-white rounded-lg z-40 transition-opacity duration-500">
+          <p className="font-semibold text-sm sm:text-base truncate">{currentVideo.title}</p>
           <p className="text-xs text-gray-400">
             {currentVideo.type === 'direct' ? '🎬 URL Direta' :
              currentVideo.type === 'movie' ? '🎥 Filme' : 
