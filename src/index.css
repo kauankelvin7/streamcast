@@ -29,6 +29,7 @@ code {
 
 ::-webkit-scrollbar-track {
   background: #1a1a1a;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
@@ -37,7 +38,36 @@ code {
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #00a794;
+  background: #00d4b8;
+}
+
+/* Scrollbar thin utility */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thumb-\[#00bfa6\]::-webkit-scrollbar-thumb {
+  background: #00bfa6;
+}
+
+.scrollbar-track-gray-800::-webkit-scrollbar-track {
+  background: #1f2937;
+}
+
+/* Truncate multiple lines */
+.line-clamp-4 {
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 /* Volume range input styling */
