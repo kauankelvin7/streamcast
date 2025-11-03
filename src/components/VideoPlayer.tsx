@@ -64,27 +64,34 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
       const iframe = iframeRef.current;
       if (!iframe) return;
 
-      // Aguarda alguns segundos para o vidsrc carregar completamente
-      const attempts = [1500, 3000, 5000, 7000];
+      // Aguarda o vidsrc carregar antes de tentar autoplay
+      const attempts = [2000, 4000];
       
-      attempts.forEach(delay => {
+      attempts.forEach((delay, index) => {
         setTimeout(() => {
-          // Simula clique no centro do iframe onde geralmente fica o botão de play
-          const iframeRect = iframe.getBoundingClientRect();
-          const centerX = iframeRect.left + iframeRect.width / 2;
-          const centerY = iframeRect.top + iframeRect.height / 2;
-          
-          // Dispara evento de clique
-          const clickEvent = new MouseEvent('click', {
-            view: window,
-            bubbles: true,
-            cancelable: true,
-            clientX: centerX,
-            clientY: centerY
-          });
-          
-          iframe.dispatchEvent(clickEvent);
-          console.log('🎬 Tentativa de autoplay no vidsrc');
+          try {
+            // Simula clique no centro do iframe onde geralmente fica o botão de play
+            const iframeRect = iframe.getBoundingClientRect();
+            const centerX = iframeRect.left + iframeRect.width / 2;
+            const centerY = iframeRect.top + iframeRect.height / 2;
+            
+            // Dispara evento de clique
+            const clickEvent = new MouseEvent('click', {
+              view: window,
+              bubbles: true,
+              cancelable: true,
+              clientX: centerX,
+              clientY: centerY
+            });
+            
+            iframe.dispatchEvent(clickEvent);
+            
+            if (index === 0) {
+              console.log('🎬 Tentando iniciar reprodução automática...');
+            }
+          } catch (error) {
+            // Silenciosamente ignora erros de autoplay
+          }
         }, delay);
       });
     };
@@ -157,7 +164,7 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
         allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
         allowFullScreen
         referrerPolicy="origin"
-        sandbox="allow-scripts allow-same-origin allow-presentation"
+        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
         style={{ minHeight: '500px' }}
       />
       {/* Camada de proteção contra pop-ups */}
