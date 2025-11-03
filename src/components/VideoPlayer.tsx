@@ -164,22 +164,7 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
         allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
         allowFullScreen
         referrerPolicy="origin"
-        sandbox="allow-scripts allow-same-origin allow-presentation allow-forms"
         style={{ minHeight: '500px' }}
-      />
-      {/* Camada de proteção contra pop-ups */}
-      <div 
-        className="absolute top-0 left-0 right-0 h-12 pointer-events-auto cursor-default"
-        style={{ zIndex: 9999 }}
-        onClickCapture={(e) => {
-          // Bloqueia cliques na parte superior (onde costumam aparecer anúncios)
-          const target = e.target as HTMLElement;
-          if (target === e.currentTarget) {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('🚫 Clique suspeito bloqueado');
-          }
-        }}
       />
     </div>
   );
