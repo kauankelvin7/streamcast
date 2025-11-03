@@ -195,10 +195,47 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
     );
   }
   
+  // MODO VÍDEO DIRETO (sincronização em tempo real)
+  if (config.playerMode === 'direct') {
+    return (
+      <video
+        ref={videoRef}
+        key={currentVideo.id}
+        src={currentVideo.url}
+        autoPlay={config.autoplay}
+        muted={config.muted}
+        loop={false}
+        controls
+        className="w-full h-full object-contain bg-black"
+      />
+    );
+  }
+  
+  // MODO YOUTUBE (sincronização parcial)
+  if (config.playerMode === 'youtube') {
+    const youtubeUrl = getYouTubeEmbedUrl(currentVideo.url, config.autoplay, config.muted);
+    
+    return (
+      <div className="relative w-full h-full bg-black">
+        <iframe
+          key={currentVideo.id}
+          src={youtubeUrl}
+          title={currentVideo.title}
+          className="w-full h-full border-0"
+          allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+          allowFullScreen
+          referrerPolicy="origin"
+          style={{ minHeight: '500px' }}
+        />
+      </div>
+    );
+  }
+  
+  // MODO VIDSRC (sem sincronização - padrão para TMDB/IMDB)
   if (currentVideo.type === 'direct') {
     const detected = detectVideoType(currentVideo.url);
     
-    // YouTube detectado automaticamente
+    // YouTube detectado automaticamente (apenas se modo não for especificado)
     if (detected.type === 'youtube') {
       const youtubeUrl = getYouTubeEmbedUrl(currentVideo.url, config.autoplay, config.muted);
       

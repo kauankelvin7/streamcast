@@ -12,8 +12,6 @@ import { initializeApp, FirebaseApp } from 'firebase/app';
 import { getDatabase, ref, set, onValue, off, Database } from 'firebase/database';
 import type { VideoSource, PlayerConfig, ScheduleItem } from '../types';
 
-// ⚠️ CREDENCIAIS DO FIREBASE CONFIGURADAS
-// Firebase Console: https://console.firebase.google.com/project/clinicall-b864e
 const firebaseConfig = {
   apiKey: "AIzaSyDSQggB7UdEblCe6npvlz2XS9GGmvanB68",
   authDomain: "clinicall-b864e.firebaseapp.com",

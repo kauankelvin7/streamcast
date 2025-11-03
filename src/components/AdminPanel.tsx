@@ -424,6 +424,86 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
               <div className="max-w-2xl mx-auto">
                 <h3 className="text-white font-bold text-xl mb-6">Configurações</h3>
                 <div className="space-y-5">
+                  {/* SELETOR DE MODO DO PLAYER */}
+                  <div>
+                    <label className="text-gray-300 text-sm font-semibold mb-2 block">🎬 Modo do Player</label>
+                    <div className="grid grid-cols-1 gap-3">
+                      <button
+                        onClick={() => setConfig({ ...config, playerMode: 'vidsrc' })}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                          config.playerMode === 'vidsrc'
+                            ? 'bg-[#00bfa6]/20 border-[#00bfa6] shadow-lg shadow-[#00bfa6]/20'
+                            : 'bg-[#121212] border-gray-700 hover:border-[#00bfa6]/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            config.playerMode === 'vidsrc' ? 'border-[#00bfa6]' : 'border-gray-600'
+                          }`}>
+                            {config.playerMode === 'vidsrc' && (
+                              <div className="w-3 h-3 bg-[#00bfa6] rounded-full"></div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white font-bold text-sm">🎬 Vidsrc (TMDB/IMDB)</p>
+                            <p className="text-gray-400 text-xs mt-1">Filmes e séries via Vidsrc - ❌ Sem sincronização em tempo real</p>
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setConfig({ ...config, playerMode: 'direct' })}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                          config.playerMode === 'direct'
+                            ? 'bg-[#00bfa6]/20 border-[#00bfa6] shadow-lg shadow-[#00bfa6]/20'
+                            : 'bg-[#121212] border-gray-700 hover:border-[#00bfa6]/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            config.playerMode === 'direct' ? 'border-[#00bfa6]' : 'border-gray-600'
+                          }`}>
+                            {config.playerMode === 'direct' && (
+                              <div className="w-3 h-3 bg-[#00bfa6] rounded-full"></div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white font-bold text-sm">🎥 Vídeo Direto (MP4/WebM)</p>
+                            <p className="text-gray-400 text-xs mt-1">URLs diretas de vídeo - ✅ Sincronização em tempo real total</p>
+                          </div>
+                        </div>
+                      </button>
+
+                      <button
+                        onClick={() => setConfig({ ...config, playerMode: 'youtube' })}
+                        className={`p-4 rounded-lg border-2 transition-all duration-200 text-left ${
+                          config.playerMode === 'youtube'
+                            ? 'bg-[#00bfa6]/20 border-[#00bfa6] shadow-lg shadow-[#00bfa6]/20'
+                            : 'bg-[#121212] border-gray-700 hover:border-[#00bfa6]/50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                            config.playerMode === 'youtube' ? 'border-[#00bfa6]' : 'border-gray-600'
+                          }`}>
+                            {config.playerMode === 'youtube' && (
+                              <div className="w-3 h-3 bg-[#00bfa6] rounded-full"></div>
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-white font-bold text-sm">📺 YouTube</p>
+                            <p className="text-gray-400 text-xs mt-1">Vídeos/playlists do YouTube - ⚠️ Sincronização parcial (API limitada)</p>
+                          </div>
+                        </div>
+                      </button>
+                    </div>
+                    <div className="mt-3 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                      <p className="text-blue-300 text-xs leading-relaxed">
+                        <strong>💡 Dica:</strong> Use <strong>Vídeo Direto</strong> para sincronização em tempo real (play/pause em todos os dispositivos). Vidsrc não permite controle devido a limitações de segurança do navegador.
+                      </p>
+                    </div>
+                  </div>
+
                   <div className="grid grid-cols-2 gap-4">
                     {[
                       { key: 'autoplay', label: 'Autoplay' },

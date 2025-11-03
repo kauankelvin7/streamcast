@@ -28,6 +28,8 @@ export type ScheduleItem = {
   active: boolean;
 };
 
+export type PlayerMode = 'vidsrc' | 'direct' | 'youtube';
+
 export type PlayerConfig = {
   autoplay: boolean;
   muted: boolean;
@@ -36,6 +38,7 @@ export type PlayerConfig = {
   ds_lang: string;
   useSchedule: boolean;
   tmdbApiKey: string;
+  playerMode: PlayerMode; // Modo do player
   
   // Sincronização em tempo real
   isPlaying?: boolean;

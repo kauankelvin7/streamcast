@@ -14,7 +14,12 @@ export async function loadData<T>(key: string, defaultValue: T): Promise<T> {
       if (result) {
         const parsed = typeof result === 'string' ? JSON.parse(result) : 
                       (result.value ? JSON.parse(result.value) : result);
-        console.log('📦 Carregado de window.storage:', key, parsed);
+        
+        // Garantir que playerMode existe
+        if (key === STORAGE_KEYS.CONFIG && parsed && !parsed.playerMode) {
+          parsed.playerMode = 'vidsrc';
+        }
+        
         return parsed || defaultValue;
       }
     }
@@ -25,10 +30,14 @@ export async function loadData<T>(key: string, defaultValue: T): Promise<T> {
   try {
     const item = localStorage.getItem(key);
     const parsed = item ? JSON.parse(item) : defaultValue;
-    console.log('💾 Carregado de localStorage:', key, parsed);
+    
+    // Garantir que playerMode existe
+    if (key === STORAGE_KEYS.CONFIG && parsed && !parsed.playerMode) {
+      parsed.playerMode = 'vidsrc';
+    }
+    
     return parsed;
   } catch (e) {
-    console.log('⚠️ Usando valor padrão:', key, defaultValue);
     return defaultValue;
   }
 }
