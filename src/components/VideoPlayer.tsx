@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Film } from 'lucide-react';
 import type { VideoSource, PlayerConfig } from '../types';
 import { buildMovieUrl, buildTvUrl, buildEpisodeUrl } from '../utils/vidsrc';
+import { useAdBlocker } from '../utils/adblock';
 
 type VideoPlayerProps = {
   config: PlayerConfig;
@@ -13,43 +14,22 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   
-  // Bloqueio de popups e propagandas
+  // Ativa o AdBlocker
+  const adBlocker = useAdBlocker();
+  
   useEffect(() => {
-    const blockPopups = () => {
-      // Bloqueia window.open
-      const originalOpen = window.open;
-      window.open = function(...args) {
-        console.log('🚫 Popup bloqueado:', args[0]);
-        return null;
-      };
-      
-      return () => {
-        window.open = originalOpen;
-      };
-    };
-    
-    const cleanup = blockPopups();
-    
-    // Bloqueia cliques que abrem novas janelas
-    const handleClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (target.tagName === 'A' && target.getAttribute('target') === '_blank') {
-        const href = target.getAttribute('href');
-        if (href && !href.includes(window.location.hostname)) {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('🚫 Link externo bloqueado:', href);
+    // Log de estatísticas do AdBlocker a cada 30 segundos
+    const statsInterval = setInterval(() => {
+      if (adBlocker) {
+        const stats = adBlocker.getStats();
+        if (stats.blockedAttempts > 0) {
+          console.log(`�️ AdBlocker: ${stats.blockedAttempts} tentativas de propaganda bloqueadas`);
         }
       }
-    };
+    }, 30000);
     
-    document.addEventListener('click', handleClick, true);
-    
-    return () => {
-      cleanup?.();
-      document.removeEventListener('click', handleClick, true);
-    };
-  }, []);
+    return () => clearInterval(statsInterval);
+  }, [adBlocker]);
   
   useEffect(() => {
     if (videoRef.current && currentVideo?.type === 'direct') {
@@ -167,7 +147,7 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
   }
   
   return (
-    <div className="relative w-full h-full">
+    <div className="relative w-full h-full bg-black">
       <iframe
         ref={iframeRef}
         key={currentVideo.id}
@@ -177,12 +157,22 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
         allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
         allowFullScreen
         referrerPolicy="origin"
+        sandbox="allow-scripts allow-same-origin allow-presentation"
         style={{ minHeight: '500px' }}
       />
-      {/* Camada invisível anti-popup - permite interação mas bloqueia propagandas */}
+      {/* Camada de proteção contra pop-ups */}
       <div 
-        className="absolute inset-0 pointer-events-none"
-        style={{ zIndex: 1 }}
+        className="absolute top-0 left-0 right-0 h-12 pointer-events-auto cursor-default"
+        style={{ zIndex: 9999 }}
+        onClickCapture={(e) => {
+          // Bloqueia cliques na parte superior (onde costumam aparecer anúncios)
+          const target = e.target as HTMLElement;
+          if (target === e.currentTarget) {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('🚫 Clique suspeito bloqueado');
+          }
+        }}
       />
     </div>
   );
