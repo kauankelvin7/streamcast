@@ -57,22 +57,35 @@ export default function EmbedPlayer() {
       unsubscribeFirebase = listenToFirebase((data) => {
         if (data) {
           console.log('🔄 [EMBED] Dados atualizados via Firebase');
-          setConfig(data.config);
+          
+          // Garantir que config, playlist e schedules existam
+          const safeConfig = data.config || DEFAULT_CONFIG;
+          const safePlaylist = Array.isArray(data.playlist) ? data.playlist : [];
+          const safeSchedules = Array.isArray(data.schedules) ? data.schedules : [];
+          
+          console.log('📊 [EMBED] Dados recebidos:', { 
+            playlist: safePlaylist.length, 
+            schedules: safeSchedules.length,
+            useSchedule: safeConfig.useSchedule
+          });
+          
+          setConfig(safeConfig);
           
           let videoToPlay: VideoSource | null = null;
           
-          if (data.config.useSchedule) {
-            videoToPlay = getActiveSchedule(data.schedules, data.playlist);
+          if (safeConfig.useSchedule && safeSchedules.length > 0) {
+            videoToPlay = getActiveSchedule(safeSchedules, safePlaylist);
           }
           
-          if (!videoToPlay) {
-            if (data.config.currentVideoId) {
-              videoToPlay = data.playlist.find(v => v.id === data.config.currentVideoId) || data.playlist[0] || null;
+          if (!videoToPlay && safePlaylist.length > 0) {
+            if (safeConfig.currentVideoId) {
+              videoToPlay = safePlaylist.find(v => v.id === safeConfig.currentVideoId) || safePlaylist[0] || null;
             } else {
-              videoToPlay = data.playlist[0] || null;
+              videoToPlay = safePlaylist[0] || null;
             }
           }
           
+          console.log('🎬 [EMBED] Vídeo Firebase:', videoToPlay?.title || 'Nenhum');
           setCurrentVideo(videoToPlay);
         }
       });
