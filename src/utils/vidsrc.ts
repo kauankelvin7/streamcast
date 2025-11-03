@@ -4,7 +4,6 @@ type MovieUrlOptions = {
   ds_lang?: string;
   autoplay?: boolean;
   sub_url?: string;
-  audioLang?: string; // Idioma de áudio preferido
 };
 
 type EpisodeUrlOptions = MovieUrlOptions & {
@@ -15,7 +14,7 @@ type EpisodeUrlOptions = MovieUrlOptions & {
 
 /**
  * EmbedMaster - Movie Embed URL
- * https://embedmaster.link/movie/{id}?lang={audioLang}
+ * https://embedmaster.link/movie/{id}
  * {id} pode ser IMDb (com prefixo tt) ou TMDb
  */
 export function buildMovieUrl(opts: MovieUrlOptions): string {
@@ -38,11 +37,6 @@ export function buildMovieUrl(opts: MovieUrlOptions): string {
   // Última tentativa: TMDb
   else if (opts.tmdb) {
     url = `${base}/${opts.tmdb}`;
-  }
-  
-  // Adiciona parâmetro de idioma se especificado
-  if (opts.audioLang) {
-    url += `?lang=${opts.audioLang}`;
   }
   
   return url;
@@ -81,7 +75,7 @@ export function buildTvUrl(opts: MovieUrlOptions): string {
 
 /**
  * EmbedMaster - TV Episode Embed URL
- * https://embedmaster.link/tv/{id}/{season}/{episode}?lang={audioLang}
+ * https://embedmaster.link/tv/{id}/{season}/{episode}
  */
 export function buildEpisodeUrl(opts: EpisodeUrlOptions): string {
   const base = 'https://embedmaster.link/tv';
@@ -103,11 +97,6 @@ export function buildEpisodeUrl(opts: EpisodeUrlOptions): string {
   // Última tentativa: TMDb
   else if (opts.tmdb) {
     url = `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
-  }
-  
-  // Adiciona parâmetro de idioma se especificado
-  if (opts.audioLang) {
-    url += `?lang=${opts.audioLang}`;
   }
   
   return url;

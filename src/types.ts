@@ -10,7 +10,6 @@ export type VideoSource = {
   posterPath?: string;
   addedAt: string;
   tags?: string[];
-  audioLang?: string; // Idioma de áudio selecionado (pt, en, es, etc)
 };
 
 export const GENRE_TAGS = [
@@ -66,10 +65,4 @@ export type TMDBTVShow = {
   first_air_date?: string;
   overview?: string;
   vote_average?: number;
-};
-
-export type AudioLanguage = {
-  iso_639_1: string;
-  english_name: string;
-  name: string;
 };

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Play, Film, Tv, Link as LinkIcon, Plus, ChevronRight, Star } from 'lucide-react';
 import type { VideoSource, TMDBMovie, TMDBTVShow } from '../types';
-import { searchMovies, searchTVShows, getTMDBPosterUrl, getMovieExternalIds, getTVExternalIds, mapGenreIdsToTags, getMovieAudioLanguages, getTVAudioLanguages, getLanguageName } from '../api/tmdb';
+import { searchMovies, searchTVShows, getTMDBPosterUrl, getMovieExternalIds, getTVExternalIds, mapGenreIdsToTags } from '../api/tmdb';
 
 type SearchTabProps = {
   onAddVideo: (video: VideoSource) => void;
@@ -23,11 +23,6 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
   // Estados para episódios
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
-  
-  // Estados para seleção de idioma
-  const [selectedMovie, setSelectedMovie] = useState<TMDBMovie | null>(null);
-  const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState<string>('pt');
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -48,55 +43,38 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
   };
 
   const handleAddMovie = async (movie: TMDBMovie) => {
-    // Busca idiomas disponíveis e mostra seletor
-    setSelectedMovie(movie);
-    const languages = await getMovieAudioLanguages(movie.id);
-    setAvailableLanguages(languages);
-    setSelectedLanguage('pt'); // Português como padrão
-  };
-  
-  const confirmAddMovie = async () => {
-    if (!selectedMovie) return;
-    
-    const tmdbId = String(selectedMovie.id);
+    const tmdbId = String(movie.id);
     
     let imdbId: string | undefined;
     try {
-      const externalIds = await getMovieExternalIds(selectedMovie.id);
+      const externalIds = await getMovieExternalIds(movie.id);
       imdbId = externalIds.imdb_id || undefined;
     } catch (e) {
       console.warn('Não foi possível obter IMDB ID');
     }
 
-    const tags = mapGenreIdsToTags(selectedMovie.genre_ids);
+    const tags = mapGenreIdsToTags(movie.genre_ids);
 
     const newVideo: VideoSource = {
       id: Date.now().toString(),
-      title: selectedMovie.title,
+      title: movie.title,
       url: '',
       type: 'movie',
       tmdb: tmdbId,
       imdb: imdbId,
-      posterPath: selectedMovie.poster_path || undefined,
+      posterPath: movie.poster_path || undefined,
       tags: tags.length > 0 ? tags : undefined,
-      addedAt: new Date().toISOString(),
-      audioLang: selectedLanguage
+      addedAt: new Date().toISOString()
     };
 
     onAddVideo(newVideo);
     setSearchQuery('');
     setSearchResults([]);
-    setSelectedMovie(null);
-    setAvailableLanguages([]);
   };
 
-  const handleSelectShow = async (show: TMDBTVShow) => {
+  const handleSelectShow = (show: TMDBTVShow) => {
     setSelectedShow(show);
     setSearchResults([]);
-    // Busca idiomas disponíveis para a série
-    const languages = await getTVAudioLanguages(show.id);
-    setAvailableLanguages(languages);
-    setSelectedLanguage('pt'); // Português como padrão
   };
 
   const handleAddEpisode = async () => {
@@ -125,8 +103,7 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
       episode,
       posterPath: selectedShow.poster_path || undefined,
       tags: tags.length > 0 ? tags : undefined,
-      addedAt: new Date().toISOString(),
-      audioLang: selectedLanguage
+      addedAt: new Date().toISOString()
     };
 
     onAddVideo(newVideo);
@@ -311,28 +288,6 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 </p>
               </div>
 
-              {/* Seletor de Idioma */}
-              {availableLanguages.length > 0 && (
-                <div className="mb-4">
-                  <label className="text-slate-300 text-sm font-semibold mb-2 block">🎧 Idioma do Áudio</label>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {availableLanguages.map((lang) => (
-                      <button
-                        key={lang}
-                        onClick={() => setSelectedLanguage(lang)}
-                        className={`py-2.5 px-3 rounded-lg font-medium text-sm transition-all ${
-                          selectedLanguage === lang
-                            ? 'bg-blue-500 text-white border-2 border-blue-400'
-                            : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:border-blue-500/50'
-                        }`}
-                      >
-                        {getLanguageName(lang)}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               <button
                 onClick={handleAddEpisode}
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all"
@@ -352,9 +307,9 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
             </div>
             <div>
               <h3 className="text-white font-bold text-lg">
-                Search {contentType === 'movie' ? 'Movies' : 'TV Shows'}
+                {contentType === 'movie' ? 'Buscar Filmes' : 'Buscar Séries'}
               </h3>
-              <p className="text-slate-400 text-xs">Powered by TMDB database</p>
+              <p className="text-slate-400 text-xs">Catálogo fornecido por TMDB</p>
             </div>
           </div>
 
@@ -392,10 +347,10 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                   )}
                 </div>
                 <h4 className="text-white font-bold text-xl mb-2">
-                  Discover {contentType === 'movie' ? 'Amazing Movies' : 'Great TV Shows'}
+                  {contentType === 'movie' ? 'Descubra Filmes Incríveis' : 'Descubra Séries Incríveis'}
                 </h4>
                 <p className="text-slate-400 text-sm max-w-md mx-auto">
-                  Search our extensive database powered by TMDB. Find your favorite {contentType === 'movie' ? 'movies' : 'series'} and add them to your playlist instantly.
+                  Busque em nosso extenso catálogo fornecido por TMDB. Encontre seus {contentType === 'movie' ? 'filmes' : 'séries'} favoritos e adicione à sua playlist instantaneamente.
                 </p>
               </div>
             )}
@@ -406,9 +361,9 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-800/50 border-2 border-slate-700 rounded-2xl mb-6">
                   <Search className="w-10 h-10 text-slate-500" />
                 </div>
-                <h4 className="text-white font-bold text-xl mb-2">No Results Found</h4>
+                <h4 className="text-white font-bold text-xl mb-2">Nenhum Resultado Encontrado</h4>
                 <p className="text-slate-400 text-sm max-w-md mx-auto">
-                  Try different keywords or check your spelling. We couldn't find any {contentType === 'movie' ? 'movies' : 'TV shows'} matching "{searchQuery}".
+                  Tente palavras-chave diferentes ou verifique a ortografia. Não encontramos {contentType === 'movie' ? 'filmes' : 'séries'} correspondentes a "{searchQuery}".
                 </p>
               </div>
             )}
@@ -516,52 +471,6 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 </div>
               </div>
             )}
-          </div>
-        </div>
-      )}
-      
-      {/* Modal de Seleção de Idioma para Filmes */}
-      {selectedMovie && (
-        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-lg w-full">
-            <h3 className="text-white font-bold text-xl mb-4">🎧 Selecionar Idioma do Áudio</h3>
-            
-            <div className="mb-6">
-              <p className="text-slate-300 font-semibold mb-2">{selectedMovie.title}</p>
-              <p className="text-slate-400 text-sm">Escolha o idioma de áudio preferido para este filme</p>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 mb-6">
-              {availableLanguages.map((lang) => (
-                <button
-                  key={lang}
-                  onClick={() => setSelectedLanguage(lang)}
-                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all ${
-                    selectedLanguage === lang
-                      ? 'bg-blue-500 text-white border-2 border-blue-400 shadow-lg shadow-blue-500/30'
-                      : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:border-blue-500/50'
-                  }`}
-                >
-                  {getLanguageName(lang)}
-                </button>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => { setSelectedMovie(null); setAvailableLanguages([]); }}
-                className="flex-1 py-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition-all"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={confirmAddMovie}
-                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
-              >
-                <Plus className="w-5 h-5" />
-                Adicionar
-              </button>
-            </div>
           </div>
         </div>
       )}

@@ -185,7 +185,7 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                   <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-white">
                     StreamCast
                   </h1>
-                  <p className="text-blue-300 text-xs sm:text-sm hidden sm:block">Admin Panel</p>
+                  <p className="text-blue-300 text-xs sm:text-sm hidden sm:block">Painel Administrativo</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -217,8 +217,8 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                       <IconCopy className="w-5 h-5 text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="text-white font-bold text-lg">Embed Code</h3>
-                      <p className="text-slate-400 text-xs">Copy and paste into your site</p>
+                      <h3 className="text-white font-bold text-lg">Código de Incorporação</h3>
+                      <p className="text-slate-400 text-xs">Copie e cole em seu site</p>
                     </div>
                   </div>
                   <button 
@@ -283,15 +283,15 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                 <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
                   <h3 className="text-2xl sm:text-3xl font-bold text-white">Playlist</h3>
                   <span className="px-4 py-2 bg-blue-500/10 border border-blue-500/30 text-blue-300 text-sm font-semibold rounded-xl">
-                    {playlist.length} {playlist.length === 1 ? 'Video' : 'Videos'}
+                    {playlist.length} {playlist.length === 1 ? 'Vídeo' : 'Vídeos'}
                   </span>
                 </div>
                 
                 {playlist.length === 0 ? (
                   <div className="border-2 border-dashed border-blue-500/20 bg-slate-800/20 rounded-2xl p-12 sm:p-16 text-center">
                     <IconListDetails className="w-16 h-16 sm:w-20 sm:h-20 text-blue-400/30 mx-auto mb-4" />
-                    <p className="text-white font-bold text-lg mb-2">Empty Playlist</p>
-                    <p className="text-slate-400 text-sm">Add videos from the Search tab</p>
+                    <p className="text-white font-bold text-lg mb-2">Playlist Vazia</p>
+                    <p className="text-slate-400 text-sm">Adicione vídeos pela aba Buscar</p>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -357,13 +357,13 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
                 {/* Create Schedule */}
                 <div className="space-y-5">
-                  <h3 className="text-2xl font-bold text-white mb-6">Create Schedule</h3>
+                  <h3 className="text-2xl font-bold text-white mb-6">Criar Agendamento</h3>
 
                   <div>
-                    <label className="text-blue-300 text-sm font-semibold mb-2 block">Name</label>
+                    <label className="text-blue-300 text-sm font-semibold mb-2 block">Nome</label>
                     <input
                       type="text"
-                      placeholder="e.g., Prime Time Movies"
+                      placeholder="ex: Filmes do Horário Nobre"
                       value={scheduleName}
                       onChange={(e) => setScheduleName(e.target.value)}
                       className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 focus:border-blue-500 rounded-xl text-white placeholder-slate-500 transition-all duration-200"
@@ -371,13 +371,13 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                   </div>
 
                   <div>
-                    <label className="text-blue-300 text-sm font-semibold mb-2 block">Video</label>
+                    <label className="text-blue-300 text-sm font-semibold mb-2 block">Vídeo</label>
                     <select
                       value={scheduleVideoId}
                       onChange={(e) => setScheduleVideoId(e.target.value)}
                       className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 focus:border-blue-500 rounded-xl text-white appearance-none cursor-pointer transition-all duration-200"
                     >
-                      <option value="">Select a video...</option>
+                      <option value="">Selecione um vídeo...</option>
                       {playlist.map(video => (
                         <option key={video.id} value={video.id}>{video.title}</option>
                       ))}
@@ -405,7 +405,7 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="text-blue-300 text-sm font-semibold mb-2 block">Start</label>
+                      <label className="text-blue-300 text-sm font-semibold mb-2 block">Início</label>
                       <input
                         type="time"
                         value={scheduleStart}
@@ -414,7 +414,7 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                       />
                     </div>
                     <div>
-                      <label className="text-blue-300 text-sm font-semibold mb-2 block">End</label>
+                      <label className="text-blue-300 text-sm font-semibold mb-2 block">Fim</label>
                       <input
                         type="time"
                         value={scheduleEnd}
@@ -429,13 +429,13 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                     className="w-full py-4 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 hover:shadow-blue-500/30 hover:scale-[1.01]"
                   >
                     <IconClockHour4 className="w-5 h-5" />
-                    Add Schedule
+                    Adicionar Agendamento
                   </button>
                 </div>
                 
                 {/* Schedules List */}
                 <div className="space-y-4">
-                  <h3 className="text-2xl font-bold text-white mb-6">Active Schedules</h3>
+                  <h3 className="text-2xl font-bold text-white mb-6">Agendamentos Ativos</h3>
 
                   {schedules.length > 0 ? (
                     schedules.map(schedule => (
@@ -464,8 +464,8 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                   ) : (
                     <div className="border-2 border-dashed border-blue-500/20 bg-slate-800/20 rounded-2xl p-12 text-center h-full flex flex-col justify-center">
                       <IconClockHour4 className="w-16 h-16 text-blue-400/30 mx-auto mb-4" />
-                      <p className="text-white font-bold text-lg mb-2">No Schedules</p>
-                      <p className="text-slate-400 text-sm">Create automated playback times</p>
+                      <p className="text-white font-bold text-lg mb-2">Sem Agendamentos</p>
+                      <p className="text-slate-400 text-sm">Crie horários automáticos de reprodução</p>
                     </div>
                   )}
                 </div>
@@ -477,7 +477,7 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                 
                 {/* PLAYER MODE SELECTOR - Simplified */}
                 <div className="space-y-6">
-                  <h3 className="text-2xl font-bold text-white mb-6">Playback Engine</h3>
+                  <h3 className="text-2xl font-bold text-white mb-6">Motor de Reprodução</h3>
                   
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     {/* EmbedMaster Mode */}
@@ -491,7 +491,7 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                     >
                       <div className="text-4xl mb-3">🎬</div>
                       <h5 className="text-base font-bold text-white mb-1">EmbedMaster</h5>
-                      <p className="text-xs text-slate-400 mb-3">Multi-source streams</p>
+                      <p className="text-xs text-slate-400 mb-3">Streams multi-fonte</p>
                       <div className={`mx-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                         config.playerMode === 'vidsrc' ? 'border-blue-400' : 'border-slate-600'
                       }`}>
@@ -511,8 +511,8 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                       }`}
                     >
                       <div className="text-4xl mb-3">🎥</div>
-                      <h5 className="text-base font-bold text-white mb-1">Direct Stream</h5>
-                      <p className="text-xs text-slate-400 mb-3">Real-time sync</p>
+                      <h5 className="text-base font-bold text-white mb-1">Stream Direto</h5>
+                      <p className="text-xs text-slate-400 mb-3">Sincronização em tempo real</p>
                       <div className={`mx-auto w-4 h-4 rounded-full border-2 flex items-center justify-center ${
                         config.playerMode === 'direct' ? 'border-blue-400' : 'border-slate-600'
                       }`}>
