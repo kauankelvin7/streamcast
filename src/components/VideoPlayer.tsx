@@ -277,7 +277,8 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
       imdb: currentVideo.imdb,
       tmdb: currentVideo.tmdb,
       ds_lang: config.ds_lang,
-      autoplay: config.autoplay
+      autoplay: config.autoplay,
+      audioLang: currentVideo.audioLang
     });
   } else if (currentVideo.type === 'tv') {
     embedUrl = buildTvUrl({
@@ -293,7 +294,8 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
       episode: currentVideo.episode || 1,
       ds_lang: config.ds_lang,
       autoplay: config.autoplay,
-      autonext: true
+      autonext: true,
+      audioLang: currentVideo.audioLang
     });
   }
   

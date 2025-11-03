@@ -132,3 +132,73 @@ export function mapGenreIdsToTags(genreIds?: number[]): string[] {
     .map(id => TMDB_GENRE_MAP[id])
     .filter(Boolean);
 }
+
+// Busca idiomas de áudio disponíveis para um filme
+export async function getMovieAudioLanguages(tmdbId: number): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/movie/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=translations`
+    );
+    
+    if (!response.ok) throw new Error('Erro ao buscar idiomas');
+    
+    const data = await response.json();
+    const translations = data.translations?.translations || [];
+    
+    // Extrai códigos de idioma únicos (iso_639_1)
+    const languages = translations
+      .map((t: any) => t.iso_639_1)
+      .filter((lang: string) => lang);
+    
+    // Remove duplicatas e retorna
+    return [...new Set(languages)] as string[];
+  } catch (error) {
+    console.error('Erro ao buscar idiomas do filme:', error);
+    return ['pt', 'en']; // Fallback para português e inglês
+  }
+}
+
+// Busca idiomas de áudio disponíveis para uma série
+export async function getTVAudioLanguages(tmdbId: number): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `https://api.themoviedb.org/3/tv/${tmdbId}?api_key=${TMDB_API_KEY}&append_to_response=translations`
+    );
+    
+    if (!response.ok) throw new Error('Erro ao buscar idiomas');
+    
+    const data = await response.json();
+    const translations = data.translations?.translations || [];
+    
+    // Extrai códigos de idioma únicos (iso_639_1)
+    const languages = translations
+      .map((t: any) => t.iso_639_1)
+      .filter((lang: string) => lang);
+    
+    // Remove duplicatas e retorna
+    return [...new Set(languages)] as string[];
+  } catch (error) {
+    console.error('Erro ao buscar idiomas da série:', error);
+    return ['pt', 'en']; // Fallback para português e inglês
+  }
+}
+
+// Mapeamento de códigos de idioma para nomes em português
+export const LANGUAGE_NAMES: Record<string, string> = {
+  'pt': '🇧🇷 Português',
+  'en': '🇺🇸 Inglês',
+  'es': '🇪🇸 Espanhol',
+  'fr': '🇫🇷 Francês',
+  'de': '🇩🇪 Alemão',
+  'it': '🇮🇹 Italiano',
+  'ja': '🇯🇵 Japonês',
+  'ko': '🇰🇷 Coreano',
+  'zh': '🇨🇳 Chinês',
+  'ru': '🇷🇺 Russo',
+  'hi': '🇮🇳 Hindi',
+  'ar': '🇸🇦 Árabe'
+};
+
+export function getLanguageName(code: string): string {
+  return LANGUAGE_NAMES[code] || code.toUpperCase();
+}

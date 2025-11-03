@@ -4,6 +4,7 @@ type MovieUrlOptions = {
   ds_lang?: string;
   autoplay?: boolean;
   sub_url?: string;
+  audioLang?: string; // Idioma de áudio preferido
 };
 
 type EpisodeUrlOptions = MovieUrlOptions & {
@@ -14,34 +15,37 @@ type EpisodeUrlOptions = MovieUrlOptions & {
 
 /**
  * EmbedMaster - Movie Embed URL
- * https://embedmaster.link/movie/{id}
+ * https://embedmaster.link/movie/{id}?lang={audioLang}
  * {id} pode ser IMDb (com prefixo tt) ou TMDb
  */
 export function buildMovieUrl(opts: MovieUrlOptions): string {
   const base = 'https://embedmaster.link/movie';
+  let url = base;
   
   // Prioriza IMDb (com tt)
   if (opts.imdb && /^tt\d+/i.test(opts.imdb)) {
-    return `${base}/${opts.imdb}`;
+    url = `${base}/${opts.imdb}`;
   }
-  
   // Usa TMDb se disponível
-  if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
-    return `${base}/${opts.tmdb}`;
+  else if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
+    url = `${base}/${opts.tmdb}`;
   }
-  
   // Fallback: tenta IMDb sem validação
-  if (opts.imdb) {
+  else if (opts.imdb) {
     const cleanId = opts.imdb.replace(/^tt/i, '');
-    return `${base}/tt${cleanId}`;
+    url = `${base}/tt${cleanId}`;
   }
-  
   // Última tentativa: TMDb
-  if (opts.tmdb) {
-    return `${base}/${opts.tmdb}`;
+  else if (opts.tmdb) {
+    url = `${base}/${opts.tmdb}`;
   }
   
-  return base;
+  // Adiciona parâmetro de idioma se especificado
+  if (opts.audioLang) {
+    url += `?lang=${opts.audioLang}`;
+  }
+  
+  return url;
 }
 
 /**
@@ -77,31 +81,34 @@ export function buildTvUrl(opts: MovieUrlOptions): string {
 
 /**
  * EmbedMaster - TV Episode Embed URL
- * https://embedmaster.link/tv/{id}/{season}/{episode}
+ * https://embedmaster.link/tv/{id}/{season}/{episode}?lang={audioLang}
  */
 export function buildEpisodeUrl(opts: EpisodeUrlOptions): string {
   const base = 'https://embedmaster.link/tv';
+  let url = base;
   
   // Prioriza IMDb (com tt)
   if (opts.imdb && /^tt\d+/i.test(opts.imdb)) {
-    return `${base}/${opts.imdb}/${opts.season}/${opts.episode}`;
+    url = `${base}/${opts.imdb}/${opts.season}/${opts.episode}`;
   }
-  
   // Usa TMDb se disponível
-  if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
-    return `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
+  else if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
+    url = `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
   }
-  
   // Fallback: tenta IMDb sem validação
-  if (opts.imdb) {
+  else if (opts.imdb) {
     const cleanId = opts.imdb.replace(/^tt/i, '');
-    return `${base}/tt${cleanId}/${opts.season}/${opts.episode}`;
+    url = `${base}/tt${cleanId}/${opts.season}/${opts.episode}`;
   }
-  
   // Última tentativa: TMDb
-  if (opts.tmdb) {
-    return `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
+  else if (opts.tmdb) {
+    url = `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
   }
   
-  return base;
+  // Adiciona parâmetro de idioma se especificado
+  if (opts.audioLang) {
+    url += `?lang=${opts.audioLang}`;
+  }
+  
+  return url;
 }

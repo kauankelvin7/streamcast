@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Search, Play, Film, Tv, Link as LinkIcon, Plus, ChevronRight, Star } from 'lucide-react';
 import type { VideoSource, TMDBMovie, TMDBTVShow } from '../types';
-import { searchMovies, searchTVShows, getTMDBPosterUrl, getMovieExternalIds, getTVExternalIds, mapGenreIdsToTags } from '../api/tmdb';
+import { searchMovies, searchTVShows, getTMDBPosterUrl, getMovieExternalIds, getTVExternalIds, mapGenreIdsToTags, getMovieAudioLanguages, getTVAudioLanguages, getLanguageName } from '../api/tmdb';
 
 type SearchTabProps = {
   onAddVideo: (video: VideoSource) => void;
@@ -23,6 +23,11 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
   // Estados para episódios
   const [season, setSeason] = useState(1);
   const [episode, setEpisode] = useState(1);
+  
+  // Estados para seleção de idioma
+  const [selectedMovie, setSelectedMovie] = useState<TMDBMovie | null>(null);
+  const [availableLanguages, setAvailableLanguages] = useState<string[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState<string>('pt');
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -43,38 +48,55 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
   };
 
   const handleAddMovie = async (movie: TMDBMovie) => {
-    const tmdbId = String(movie.id);
+    // Busca idiomas disponíveis e mostra seletor
+    setSelectedMovie(movie);
+    const languages = await getMovieAudioLanguages(movie.id);
+    setAvailableLanguages(languages);
+    setSelectedLanguage('pt'); // Português como padrão
+  };
+  
+  const confirmAddMovie = async () => {
+    if (!selectedMovie) return;
+    
+    const tmdbId = String(selectedMovie.id);
     
     let imdbId: string | undefined;
     try {
-      const externalIds = await getMovieExternalIds(movie.id);
+      const externalIds = await getMovieExternalIds(selectedMovie.id);
       imdbId = externalIds.imdb_id || undefined;
     } catch (e) {
       console.warn('Não foi possível obter IMDB ID');
     }
 
-    const tags = mapGenreIdsToTags(movie.genre_ids);
+    const tags = mapGenreIdsToTags(selectedMovie.genre_ids);
 
     const newVideo: VideoSource = {
       id: Date.now().toString(),
-      title: movie.title,
+      title: selectedMovie.title,
       url: '',
       type: 'movie',
       tmdb: tmdbId,
       imdb: imdbId,
-      posterPath: movie.poster_path || undefined,
+      posterPath: selectedMovie.poster_path || undefined,
       tags: tags.length > 0 ? tags : undefined,
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      audioLang: selectedLanguage
     };
 
     onAddVideo(newVideo);
     setSearchQuery('');
     setSearchResults([]);
+    setSelectedMovie(null);
+    setAvailableLanguages([]);
   };
 
-  const handleSelectShow = (show: TMDBTVShow) => {
+  const handleSelectShow = async (show: TMDBTVShow) => {
     setSelectedShow(show);
     setSearchResults([]);
+    // Busca idiomas disponíveis para a série
+    const languages = await getTVAudioLanguages(show.id);
+    setAvailableLanguages(languages);
+    setSelectedLanguage('pt'); // Português como padrão
   };
 
   const handleAddEpisode = async () => {
@@ -103,7 +125,8 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
       episode,
       posterPath: selectedShow.poster_path || undefined,
       tags: tags.length > 0 ? tags : undefined,
-      addedAt: new Date().toISOString()
+      addedAt: new Date().toISOString(),
+      audioLang: selectedLanguage
     };
 
     onAddVideo(newVideo);
@@ -143,8 +166,8 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <LinkIcon className="w-4 h-4" />
-          <span className="hidden sm:inline">Direct URL</span>
+          <LinkIcon className="w-5 h-5" />
+          <span className="hidden sm:inline">URL Direta</span>
           <span className="sm:hidden">URL</span>
         </button>
         <button
@@ -155,8 +178,8 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Film className="w-4 h-4" />
-          Movies
+          <Film className="w-5 h-5" />
+          Filmes
         </button>
         <button
           onClick={() => { setContentType('tv'); setSearchResults([]); setSelectedShow(null); }}
@@ -166,8 +189,8 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
               : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Tv className="w-4 h-4" />
-          TV Shows
+          <Tv className="w-5 h-5" />
+          Séries
         </button>
       </div>
 
@@ -224,11 +247,11 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 onClick={() => setSelectedShow(null)}
                 className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors"
               >
-                ← Back
+                ← Voltar
               </button>
               <div className="flex-1">
                 <h3 className="text-white font-bold text-lg flex items-center gap-2">
-                  <Tv className="w-5 h-5 text-blue-400" />
+                  <Tv className="w-6 h-6 text-blue-400" />
                   {selectedShow.name}
                 </h3>
                 <p className="text-slate-400 text-sm mt-1">
@@ -246,7 +269,7 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 />
                 {selectedShow.overview && (
                   <div className="flex-1">
-                    <h4 className="text-white font-semibold mb-2 text-sm">Synopsis</h4>
+                    <h4 className="text-white font-semibold mb-2 text-sm">Sinopse</h4>
                     <p className="text-slate-400 text-sm line-clamp-4">{selectedShow.overview}</p>
                   </div>
                 )}
@@ -255,13 +278,13 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
 
             <div className="bg-slate-800/30 rounded-lg p-5 border border-slate-700">
               <h4 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Play className="w-5 h-5 text-blue-400" />
-                Select Episode
+                <Play className="w-6 h-6 text-blue-400" />
+                Selecionar Episódio
               </h4>
               
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="text-slate-300 text-sm font-semibold mb-2 block">Season</label>
+                  <label className="text-slate-300 text-sm font-semibold mb-2 block">Temporada</label>
                   <input
                     type="number"
                     min="1"
@@ -271,7 +294,7 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                   />
                 </div>
                 <div>
-                  <label className="text-slate-300 text-sm font-semibold mb-2 block">Episode</label>
+                  <label className="text-slate-300 text-sm font-semibold mb-2 block">Episódio</label>
                   <input
                     type="number"
                     min="1"
@@ -284,16 +307,38 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
 
               <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
                 <p className="text-blue-300 text-sm font-semibold">
-                  📺 Adding: {selectedShow.name} - S{season.toString().padStart(2, '0')}E{episode.toString().padStart(2, '0')}
+                  📺 Adicionando: {selectedShow.name} - S{season.toString().padStart(2, '0')}E{episode.toString().padStart(2, '0')}
                 </p>
               </div>
+
+              {/* Seletor de Idioma */}
+              {availableLanguages.length > 0 && (
+                <div className="mb-4">
+                  <label className="text-slate-300 text-sm font-semibold mb-2 block">🎧 Idioma do Áudio</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {availableLanguages.map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => setSelectedLanguage(lang)}
+                        className={`py-2.5 px-3 rounded-lg font-medium text-sm transition-all ${
+                          selectedLanguage === lang
+                            ? 'bg-blue-500 text-white border-2 border-blue-400'
+                            : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:border-blue-500/50'
+                        }`}
+                      >
+                        {getLanguageName(lang)}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <button
                 onClick={handleAddEpisode}
                 className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all"
               >
-                <Plus className="w-5 h-5" />
-                Add Episode
+                <Plus className="w-6 h-6" />
+                Adicionar Episódio
               </button>
             </div>
           </div>
@@ -471,6 +516,52 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Modal de Seleção de Idioma para Filmes */}
+      {selectedMovie && (
+        <div className="fixed inset-0 bg-black/90 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 sm:p-8 max-w-lg w-full">
+            <h3 className="text-white font-bold text-xl mb-4">🎧 Selecionar Idioma do Áudio</h3>
+            
+            <div className="mb-6">
+              <p className="text-slate-300 font-semibold mb-2">{selectedMovie.title}</p>
+              <p className="text-slate-400 text-sm">Escolha o idioma de áudio preferido para este filme</p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              {availableLanguages.map((lang) => (
+                <button
+                  key={lang}
+                  onClick={() => setSelectedLanguage(lang)}
+                  className={`py-3 px-4 rounded-xl font-semibold text-sm transition-all ${
+                    selectedLanguage === lang
+                      ? 'bg-blue-500 text-white border-2 border-blue-400 shadow-lg shadow-blue-500/30'
+                      : 'bg-slate-800/50 border border-slate-700 text-slate-300 hover:border-blue-500/50'
+                  }`}
+                >
+                  {getLanguageName(lang)}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setSelectedMovie(null); setAvailableLanguages([]); }}
+                className="flex-1 py-3 bg-slate-800 border border-slate-700 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold transition-all"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmAddMovie}
+                className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2"
+              >
+                <Plus className="w-5 h-5" />
+                Adicionar
+              </button>
+            </div>
           </div>
         </div>
       )}
