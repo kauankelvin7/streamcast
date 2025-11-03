@@ -6,14 +6,29 @@ export async function searchMovies(query: string): Promise<TMDBMovie[]> {
   if (!query.trim()) return [];
   
   try {
+    // Busca com idioma PT-BR e região Brasil para melhores resultados
     const response = await fetch(
-      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`
+      `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR&region=BR&include_adult=false`
     );
     
     if (!response.ok) throw new Error('Erro na busca');
     
     const data = await response.json();
-    return data.results || [];
+    const results = data.results || [];
+    
+    // Se não encontrou resultados em PT-BR, tenta em inglês também
+    if (results.length === 0) {
+      const enResponse = await fetch(
+        `https://api.themoviedb.org/3/search/movie?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&include_adult=false`
+      );
+      
+      if (enResponse.ok) {
+        const enData = await enResponse.json();
+        return enData.results || [];
+      }
+    }
+    
+    return results;
   } catch (error) {
     console.error('Erro ao buscar filmes:', error);
     return [];
@@ -24,14 +39,29 @@ export async function searchTVShows(query: string): Promise<TMDBTVShow[]> {
   if (!query.trim()) return [];
   
   try {
+    // Busca com idioma PT-BR e região Brasil para melhores resultados
     const response = await fetch(
-      `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR`
+      `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=pt-BR&region=BR&include_adult=false`
     );
     
     if (!response.ok) throw new Error('Erro na busca');
     
     const data = await response.json();
-    return data.results || [];
+    const results = data.results || [];
+    
+    // Se não encontrou resultados em PT-BR, tenta em inglês também
+    if (results.length === 0) {
+      const enResponse = await fetch(
+        `https://api.themoviedb.org/3/search/tv?api_key=${TMDB_API_KEY}&query=${encodeURIComponent(query)}&language=en-US&include_adult=false`
+      );
+      
+      if (enResponse.ok) {
+        const enData = await enResponse.json();
+        return enData.results || [];
+      }
+    }
+    
+    return results;
   } catch (error) {
     console.error('Erro ao buscar séries:', error);
     return [];
