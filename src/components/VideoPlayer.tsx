@@ -19,14 +19,10 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
       video.muted = config.muted;
       
       if (config.autoplay) {
-        video.play().catch(() => {
-          console.log('Autoplay bloqueado pelo navegador');
-        });
+        video.play().catch(() => {});
       }
       
-      // Listener para quando o vídeo terminar
       const handleEnded = () => {
-        console.log('🎬 Vídeo direto terminou, chamando próximo');
         onVideoEnd?.();
       };
       
@@ -38,7 +34,6 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
     }
   }, [currentVideo, config, onVideoEnd]);
 
-  // Script para clicar automaticamente no play do vidsrc
   useEffect(() => {
     if (!iframeRef.current || currentVideo?.type === 'direct' || !currentVideo) return;
 
@@ -46,18 +41,15 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
       const iframe = iframeRef.current;
       if (!iframe) return;
 
-      // Aguarda o vidsrc carregar antes de tentar autoplay
       const attempts = [2000, 4000];
       
-      attempts.forEach((delay, index) => {
+      attempts.forEach((delay) => {
         setTimeout(() => {
           try {
-            // Simula clique no centro do iframe onde geralmente fica o botão de play
             const iframeRect = iframe.getBoundingClientRect();
             const centerX = iframeRect.left + iframeRect.width / 2;
             const centerY = iframeRect.top + iframeRect.height / 2;
             
-            // Dispara evento de clique
             const clickEvent = new MouseEvent('click', {
               view: window,
               bubbles: true,
@@ -67,13 +59,7 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
             });
             
             iframe.dispatchEvent(clickEvent);
-            
-            if (index === 0) {
-              console.log('🎬 Tentando iniciar reprodução automática...');
-            }
-          } catch (error) {
-            // Silenciosamente ignora erros de autoplay
-          }
+          } catch (error) {}
         }, delay);
       });
     };

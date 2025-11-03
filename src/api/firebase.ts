@@ -35,7 +35,6 @@ let database: Database | null = null;
  */
 export function initFirebase(): boolean {
   if (!isConfigured) {
-    console.warn('⚠️ Firebase não configurado. Usando apenas localStorage.');
     return false;
   }
   
@@ -43,11 +42,10 @@ export function initFirebase(): boolean {
     if (!app) {
       app = initializeApp(firebaseConfig);
       database = getDatabase(app);
-      console.log('✅ Firebase inicializado com sucesso');
     }
     return true;
   } catch (error) {
-    console.error('❌ Erro ao inicializar Firebase:', error);
+    console.error('Erro ao inicializar Firebase:', error);
     return false;
   }
 }
@@ -77,10 +75,9 @@ export async function saveToFirebase(data: StreamcastData): Promise<boolean> {
       lastUpdate: Date.now()
     });
     
-    console.log('✅ Dados salvos no Firebase');
     return true;
   } catch (error) {
-    console.error('❌ Erro ao salvar no Firebase:', error);
+    console.error('Erro ao salvar no Firebase:', error);
     return false;
   }
 }
@@ -99,16 +96,11 @@ export async function loadFromFirebase(): Promise<StreamcastData | null> {
     return new Promise((resolve) => {
       onValue(dataRef, (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-          console.log('📥 Dados carregados do Firebase');
-          resolve(data);
-        } else {
-          resolve(null);
-        }
+        resolve(data || null);
       }, { onlyOnce: true });
     });
   } catch (error) {
-    console.error('❌ Erro ao carregar do Firebase:', error);
+    console.error('Erro ao carregar do Firebase:', error);
     return null;
   }
 }
@@ -122,7 +114,6 @@ export function listenToFirebase(
   callback: (data: StreamcastData | null) => void
 ): () => void {
   if (!initFirebase() || !database) {
-    console.warn('⚠️ Firebase não disponível');
     return () => {};
   }
   
@@ -130,18 +121,11 @@ export function listenToFirebase(
   
   const listener = onValue(dataRef, (snapshot) => {
     const data = snapshot.val();
-    if (data) {
-      console.log('🔄 Dados atualizados do Firebase');
-      callback(data);
-    } else {
-      callback(null);
-    }
+    callback(data || null);
   });
   
-  // Retorna função para cancelar escuta
   return () => {
     off(dataRef);
-    console.log('🔇 Listener do Firebase removido');
   };
 }
 

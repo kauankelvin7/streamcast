@@ -100,31 +100,25 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
   };
 
   const handleSaveAll = async () => {
-    // Importar função de salvar
     const { saveAllData } = await import('../utils/storage');
     const success = await saveAllData(config, playlist, schedules);
     
     if (success) {
-      // Notificar todos os embeds que os dados foram atualizados
       const frames = document.querySelectorAll('iframe');
       frames.forEach(frame => {
         try {
           frame.contentWindow?.postMessage({ type: 'STREAMCAST_SYNC' }, '*');
-        } catch (e) {
-          console.log('Não foi possível notificar iframe:', e);
-        }
+        } catch (e) {}
       });
       
-      // Disparar evento de storage customizado para abas abertas
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'streamcast-sync',
         newValue: Date.now().toString()
       }));
       
-      console.log('✅ Configurações salvas e sincronizadas!');
-      alert('✅ Configurações salvas e sincronizadas!\n\n💡 Se configurou o Firebase, os dados foram salvos na nuvem para sincronização cross-origin.');
+      alert('✅ Configurações salvas e sincronizadas!');
     } else {
-      alert('❌ Erro ao salvar configurações. Verifique o console.');
+      alert('❌ Erro ao salvar configurações.');
     }
     
     onSave(config, playlist, schedules);
