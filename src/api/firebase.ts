@@ -119,7 +119,7 @@ export function listenToFirebase(
   
   const dataRef = ref(database, 'streamcast');
   
-  const listener = onValue(dataRef, (snapshot) => {
+  onValue(dataRef, (snapshot) => {
     const data = snapshot.val();
     callback(data || null);
   });
