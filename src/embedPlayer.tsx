@@ -82,6 +82,16 @@ export default function EmbedPlayer() {
             useSchedule: safeConfig.useSchedule
           });
           
+          // 🔥 SALVAR NO LOCALSTORAGE para evitar que interval sobrescreva
+          try {
+            localStorage.setItem(STORAGE_KEYS.CONFIG, JSON.stringify(safeConfig));
+            localStorage.setItem(STORAGE_KEYS.PLAYLIST, JSON.stringify(safePlaylist));
+            localStorage.setItem(STORAGE_KEYS.SCHEDULES, JSON.stringify(safeSchedules));
+            console.log('💾 [EMBED] Dados do Firebase salvos no localStorage');
+          } catch (e) {
+            console.warn('⚠️ Erro ao salvar no localStorage:', e);
+          }
+          
           setConfig(safeConfig);
           
           let videoToPlay: VideoSource | null = null;
