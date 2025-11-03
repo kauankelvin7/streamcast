@@ -31,17 +31,18 @@ export class AdBlocker {
     const originalOpen = window.open;
     
     window.open = (...args) => {
-      this.blockedAttempts++;
-      console.log(`🚫 Pop-up bloqueado #${this.blockedAttempts}:`, args[0]);
-      
-      // Se for um domínio confiável, pode permitir (opcional)
       const url = args[0]?.toString() || '';
       const trustedDomains = [window.location.hostname];
       
+      // Se for um domínio confiável, pode permitir
       if (trustedDomains.some(domain => url.includes(domain))) {
+        console.log('✅ Pop-up permitido (domínio confiável):', url);
         return originalOpen.apply(window, args);
       }
       
+      // Bloquear
+      this.blockedAttempts++;
+      console.log(`🚫 Pop-up bloqueado #${this.blockedAttempts}:`, url);
       return null;
     };
   }
@@ -101,9 +102,14 @@ export class AdBlocker {
           e.preventDefault();
           e.stopPropagation();
           e.stopImmediatePropagation();
-          console.log('🚫 Link suspeito bloqueado:', href);
+          console.log('🚫 Link suspeito bloqueado (propaganda):', href);
           this.blockedAttempts++;
           return false;
+        }
+        
+        // Link permitido
+        if (href && href !== '#' && !href.startsWith('javascript:')) {
+          console.log('✅ Link permitido:', href);
         }
       }
     }, true); // Use capture phase
@@ -214,13 +220,25 @@ export class AdBlocker {
         'vidsrc.to',
         'vidsrc.net',
         'vidsrc-embed.ru',
+        'vidsrc.in',
+        'vidsrc.cc',
+        'pro.vidsrc.me',
+        'embed.su',
+        'vidsrc.stream',
         'localhost'
       ];
       
-      return allowedDomains.some(domain => 
+      const isAllowed = allowedDomains.some(domain => 
         urlObj.hostname === domain || urlObj.hostname.endsWith('.' + domain)
       );
+      
+      if (!isAllowed) {
+        console.log('❌ URL não está na lista de permitidos:', urlObj.hostname);
+      }
+      
+      return isAllowed;
     } catch {
+      console.log('❌ URL inválida:', url);
       return false;
     }
   }
