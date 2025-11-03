@@ -134,188 +134,182 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
   return (
     <div className="space-y-6">
       {/* Seletor de Tipo de Conteúdo */}
-      <div className="flex gap-3 p-1.5 bg-[#0d0d0d] rounded-xl border border-gray-800">
+  <div className="flex gap-2 p-1.5 bg-slate-900/50 rounded-xl border border-slate-700">
         <button
           onClick={() => { setContentType('direct'); setSearchResults([]); setSelectedShow(null); }}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 sm:px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
             contentType === 'direct' 
-              ? 'bg-gradient-to-r from-[#00bfa6] to-[#00d4b8] text-black shadow-lg shadow-[#00bfa6]/30' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <LinkIcon className="w-5 h-5" />
-          <span className="hidden sm:inline">URL Direta</span>
+          <LinkIcon className="w-4 h-4" />
+          <span className="hidden sm:inline">Direct URL</span>
           <span className="sm:hidden">URL</span>
         </button>
         <button
           onClick={() => { setContentType('movie'); setSearchResults([]); setSelectedShow(null); }}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 sm:px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
             contentType === 'movie' 
-              ? 'bg-gradient-to-r from-[#00bfa6] to-[#00d4b8] text-black shadow-lg shadow-[#00bfa6]/30' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Film className="w-5 h-5" />
-          Filmes
+          <Film className="w-4 h-4" />
+          Movies
         </button>
         <button
           onClick={() => { setContentType('tv'); setSearchResults([]); setSelectedShow(null); }}
-          className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 ${
+          className={`flex-1 py-2.5 px-3 sm:px-4 rounded-lg font-semibold transition-all duration-200 flex items-center justify-center gap-2 text-sm ${
             contentType === 'tv' 
-              ? 'bg-gradient-to-r from-[#00bfa6] to-[#00d4b8] text-black shadow-lg shadow-[#00bfa6]/30' 
-              : 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              ? 'bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/20' 
+              : 'text-slate-400 hover:text-white hover:bg-slate-800'
           }`}
         >
-          <Tv className="w-5 h-5" />
-          Séries
+          <Tv className="w-4 h-4" />
+          TV Shows
         </button>
       </div>
 
       {/* Conteúdo Principal */}
       {contentType === 'direct' ? (
         // URL Direta
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] rounded-2xl p-6 sm:p-8 border border-gray-800 shadow-2xl">
+  <div className="bg-slate-900/40 rounded-xl p-5 sm:p-6 border border-slate-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#00bfa6]/20 to-[#00bfa6]/5 rounded-xl flex items-center justify-center border border-[#00bfa6]/30">
-              <LinkIcon className="w-6 h-6 text-[#00bfa6]" />
+            <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center justify-center">
+              <LinkIcon className="w-5 h-5 text-blue-400" />
             </div>
             <div>
-              <h3 className="text-white font-bold text-xl">Adicionar URL Direta</h3>
-              <p className="text-gray-400 text-sm">Adicione vídeos de qualquer URL (MP4, WebM, etc)</p>
+              <h3 className="text-white font-bold text-lg">Add Direct URL</h3>
+              <p className="text-slate-400 text-xs">Support for MP4, WebM, and more</p>
             </div>
           </div>
           
           <div className="space-y-4">
             <div>
-              <label className="text-gray-300 text-sm font-semibold mb-2 block">Título do Vídeo</label>
+              <label className="text-blue-300 text-sm font-semibold mb-2 block">Título do Vídeo</label>
               <input
                 type="text"
-                placeholder="Ex: Meu Vídeo Personalizado"
+                placeholder="ex: Meu Vídeo Personalizado"
                 value={videoTitle}
                 onChange={(e) => setVideoTitle(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0d0d0d] border border-gray-700 focus:border-[#00bfa6] rounded-lg text-white placeholder-gray-500 transition-colors"
+                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 transition-colors"
               />
             </div>
             <div>
-              <label className="text-gray-300 text-sm font-semibold mb-2 block">URL do Vídeo</label>
+              <label className="text-blue-300 text-sm font-semibold mb-2 block">URL do Vídeo</label>
               <input
                 type="text"
                 placeholder="https://exemplo.com/video.mp4"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
-                className="w-full px-4 py-3 bg-[#0d0d0d] border border-gray-700 focus:border-[#00bfa6] rounded-lg text-white placeholder-gray-500 transition-colors font-mono text-sm"
+                className="w-full px-4 py-3 bg-slate-800/50 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 transition-colors font-mono text-sm"
               />
             </div>
             <button
               onClick={handleAddDirect}
-              className="w-full py-4 bg-gradient-to-r from-[#00bfa6] to-[#00d4b8] hover:from-[#00a794] hover:to-[#00bfa6] text-black font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#00bfa6]/30 transition-all"
+              className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all"
             >
               <Plus className="w-5 h-5" />
-              Adicionar à Playlist
+              Add to Playlist
             </button>
           </div>
         </div>
       ) : selectedShow ? (
         // Seletor de Episódios
-        <div className="space-y-6">
-          <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] rounded-2xl p-6 border border-gray-800 shadow-2xl">
+        <div className="space-y-4">
+          <div className="bg-slate-900/40 rounded-xl p-5 sm:p-6 border border-slate-700">
             <div className="flex items-start gap-4 mb-6">
               <button
                 onClick={() => setSelectedShow(null)}
-                className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded-lg text-sm font-semibold transition-colors"
+                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-sm font-semibold transition-colors"
               >
-                ← Voltar
+                ← Back
               </button>
               <div className="flex-1">
-                <h3 className="text-white font-bold text-xl flex items-center gap-2">
-                  <Tv className="w-6 h-6 text-[#00bfa6]" />
+                <h3 className="text-white font-bold text-lg flex items-center gap-2">
+                  <Tv className="w-5 h-5 text-blue-400" />
                   {selectedShow.name}
                 </h3>
-                <p className="text-gray-400 text-sm mt-1">
-                  {selectedShow.first_air_date ? new Date(selectedShow.first_air_date).getFullYear() : 'N/A'}
+                <p className="text-slate-400 text-sm mt-1">
+                  {selectedShow.first_air_date ? new Date(selectedShow.first_air_date).getFullYear() : '—'}
                 </p>
               </div>
             </div>
 
             {selectedShow.poster_path && (
-              <div className="mb-6 flex items-start gap-6">
+              <div className="mb-6 flex flex-col sm:flex-row items-start gap-4 sm:gap-6">
                 <img
                   src={getTMDBPosterUrl(selectedShow.poster_path, 'w200')}
                   alt={selectedShow.name}
-                  className="w-32 h-48 object-cover rounded-lg border-2 border-gray-700"
+                  className="w-24 sm:w-32 h-36 sm:h-48 object-cover rounded-lg border border-slate-700"
                 />
                 {selectedShow.overview && (
                   <div className="flex-1">
-                    <h4 className="text-white font-semibold mb-2">Sinopse</h4>
-                    <p className="text-gray-400 text-sm line-clamp-4">{selectedShow.overview}</p>
+                    <h4 className="text-white font-semibold mb-2 text-sm">Synopsis</h4>
+                    <p className="text-slate-400 text-sm line-clamp-4">{selectedShow.overview}</p>
                   </div>
                 )}
               </div>
             )}
 
-            <div className="bg-[#0d0d0d] rounded-xl p-6 border border-gray-800">
+            <div className="bg-slate-800/30 rounded-lg p-5 border border-slate-700">
               <h4 className="text-white font-bold mb-4 flex items-center gap-2">
-                <Play className="w-5 h-5 text-[#00bfa6]" />
-                Selecionar Episódio
+                <Play className="w-5 h-5 text-blue-400" />
+                Select Episode
               </h4>
               
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div>
-                  <label className="text-gray-300 text-sm font-semibold mb-2 block">Temporada</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="1"
-                      value={season}
-                      onChange={(e) => setSeason(Number(e.target.value))}
-                      className="w-full px-4 py-3 bg-[#1a1a1a] border border-gray-700 focus:border-[#00bfa6] rounded-lg text-white text-center text-lg font-bold transition-colors"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">S</span>
-                  </div>
+                  <label className="text-slate-300 text-sm font-semibold mb-2 block">Season</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={season}
+                    onChange={(e) => setSeason(Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-lg text-white text-center text-lg font-bold transition-colors"
+                  />
                 </div>
                 <div>
-                  <label className="text-gray-300 text-sm font-semibold mb-2 block">Episódio</label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="1"
-                      value={episode}
-                      onChange={(e) => setEpisode(Number(e.target.value))}
-                      className="w-full px-4 py-3 bg-[#1a1a1a] border border-gray-700 focus:border-[#00bfa6] rounded-lg text-white text-center text-lg font-bold transition-colors"
-                    />
-                    <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 text-sm">E</span>
-                  </div>
+                  <label className="text-slate-300 text-sm font-semibold mb-2 block">Episode</label>
+                  <input
+                    type="number"
+                    min="1"
+                    value={episode}
+                    onChange={(e) => setEpisode(Number(e.target.value))}
+                    className="w-full px-4 py-3 bg-slate-900 border border-slate-700 focus:border-blue-500 rounded-lg text-white text-center text-lg font-bold transition-colors"
+                  />
                 </div>
               </div>
 
-              <div className="bg-[#00bfa6]/10 border border-[#00bfa6]/30 rounded-lg p-4 mb-4">
-                <p className="text-[#00bfa6] text-sm font-semibold">
-                  📺 Será adicionado: {selectedShow.name} - S{season.toString().padStart(2, '0')}E{episode.toString().padStart(2, '0')}
+              <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 mb-4">
+                <p className="text-blue-300 text-sm font-semibold">
+                  📺 Adding: {selectedShow.name} - S{season.toString().padStart(2, '0')}E{episode.toString().padStart(2, '0')}
                 </p>
               </div>
 
               <button
                 onClick={handleAddEpisode}
-                className="w-full py-4 bg-gradient-to-r from-[#00bfa6] to-[#00d4b8] hover:from-[#00a794] hover:to-[#00bfa6] text-black font-bold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-[#00bfa6]/30 transition-all"
+                className="w-full py-3.5 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white font-bold rounded-lg flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20 transition-all"
               >
                 <Plus className="w-5 h-5" />
-                Adicionar Episódio (Auto-incrementa)
+                Add Episode
               </button>
             </div>
           </div>
         </div>
       ) : (
         // Busca de Filmes/Séries
-        <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0d0d0d] rounded-2xl p-6 sm:p-8 border border-gray-800 shadow-2xl">
+  <div className="bg-slate-900/40 rounded-xl p-5 sm:p-6 border border-slate-700">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-gradient-to-br from-[#00bfa6]/20 to-[#00bfa6]/5 rounded-xl flex items-center justify-center border border-[#00bfa6]/30">
-              {contentType === 'movie' ? <Film className="w-6 h-6 text-[#00bfa6]" /> : <Tv className="w-6 h-6 text-[#00bfa6]" />}
+            <div className="w-10 h-10 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center justify-center">
+              {contentType === 'movie' ? <Film className="w-5 h-5 text-blue-400" /> : <Tv className="w-5 h-5 text-blue-400" />}
             </div>
             <div>
-              <h3 className="text-white font-bold text-xl">
-                Buscar {contentType === 'movie' ? 'Filmes' : 'Séries'}
+              <h3 className="text-white font-bold text-lg">
+                Search {contentType === 'movie' ? 'Movies' : 'TV Shows'}
               </h3>
-              <p className="text-gray-400 text-sm">Pesquise no banco de dados do TMDB</p>
+              <p className="text-slate-400 text-xs">Powered by TMDB database</p>
             </div>
           </div>
 
@@ -325,81 +319,153 @@ export default function SearchTab({ onAddVideo }: SearchTabProps) {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-500" />
                 <input
                   type="text"
-                  placeholder={contentType === 'movie' ? 'Ex: Oppenheimer, Homem Aranha...' : 'Ex: Breaking Bad, Game of Thrones...'}
+                  placeholder={contentType === 'movie' ? 'Buscar filmes... (ex: Oppenheimer, Duna)' : 'Buscar séries... (ex: Breaking Bad, The Last of Us)'}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                  className="w-full pl-12 pr-4 py-3 bg-[#0d0d0d] border border-gray-700 focus:border-[#00bfa6] rounded-lg text-white placeholder-gray-500 transition-colors"
+                  className="w-full pl-12 pr-4 py-3 bg-slate-800/50 border border-slate-700 focus:border-blue-500 rounded-lg text-white placeholder-slate-500 transition-colors"
                 />
               </div>
               <button
                 onClick={handleSearch}
                 disabled={isSearching || !searchQuery.trim()}
-                className="px-6 py-3 bg-gradient-to-r from-[#00bfa6] to-[#00d4b8] hover:from-[#00a794] hover:to-[#00bfa6] disabled:from-gray-700 disabled:to-gray-600 disabled:cursor-not-allowed text-black font-bold rounded-lg transition-all shadow-lg shadow-[#00bfa6]/30 disabled:shadow-none flex items-center gap-2"
+                className="px-6 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 disabled:from-slate-700 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-lg transition-all shadow-lg shadow-blue-500/30 disabled:shadow-none flex items-center gap-2"
               >
                 <Search className="w-5 h-5" />
                 <span className="hidden sm:inline">{isSearching ? 'Buscando...' : 'Buscar'}</span>
               </button>
             </div>
 
+            {/* Empty State */}
+            {!isSearching && searchResults.length === 0 && !searchQuery && (
+              <div className="mt-12 text-center py-16 px-4">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-blue-500/10 border-2 border-blue-500/30 rounded-2xl mb-6">
+                  {contentType === 'movie' ? (
+                    <Film className="w-10 h-10 text-blue-400" />
+                  ) : (
+                    <Tv className="w-10 h-10 text-blue-400" />
+                  )}
+                </div>
+                <h4 className="text-white font-bold text-xl mb-2">
+                  Discover {contentType === 'movie' ? 'Amazing Movies' : 'Great TV Shows'}
+                </h4>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                  Search our extensive database powered by TMDB. Find your favorite {contentType === 'movie' ? 'movies' : 'series'} and add them to your playlist instantly.
+                </p>
+              </div>
+            )}
+
+            {/* No Results */}
+            {!isSearching && searchResults.length === 0 && searchQuery && (
+              <div className="mt-12 text-center py-16 px-4">
+                <div className="inline-flex items-center justify-center w-20 h-20 bg-slate-800/50 border-2 border-slate-700 rounded-2xl mb-6">
+                  <Search className="w-10 h-10 text-slate-500" />
+                </div>
+                <h4 className="text-white font-bold text-xl mb-2">No Results Found</h4>
+                <p className="text-slate-400 text-sm max-w-md mx-auto">
+                  Try different keywords or check your spelling. We couldn't find any {contentType === 'movie' ? 'movies' : 'TV shows'} matching "{searchQuery}".
+                </p>
+              </div>
+            )}
+
+            {/* Loading State */}
+            {isSearching && (
+              <div className="mt-12 py-16">
+                <div className="flex flex-col items-center gap-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin"></div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                      <div className="w-8 h-8 bg-blue-500/20 rounded-full animate-pulse"></div>
+                    </div>
+                  </div>
+                  <div className="text-center">
+                    <h4 className="text-white font-bold text-lg mb-1">Searching...</h4>
+                    <p className="text-slate-400 text-sm">Looking for the best {contentType === 'movie' ? 'movies' : 'TV shows'} for you</p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {searchResults.length > 0 && (
-              <div className="mt-6">
-                <div className="flex items-center justify-between mb-4">
-                  <h4 className="text-white font-bold flex items-center gap-2">
-                    <Star className="w-5 h-5 text-[#00bfa6]" />
-                    Resultados da Busca
-                  </h4>
-                  <span className="px-3 py-1 bg-[#00bfa6]/20 border border-[#00bfa6]/30 text-[#00bfa6] text-sm font-semibold rounded-full">
-                    {searchResults.length} encontrado{searchResults.length !== 1 ? 's' : ''}
+              <div className="mt-6 space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-white font-bold text-lg">Results</h4>
+                  <span className="px-3 py-1 bg-blue-500/10 border border-blue-500/30 text-blue-300 text-sm font-semibold rounded-lg">
+                    {searchResults.length} {searchResults.length === 1 ? 'item' : 'items'}
                   </span>
                 </div>
                 
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 max-h-[500px] overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-[#00bfa6] scrollbar-track-gray-800">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 sm:gap-4">
                   {searchResults.map((item) => {
                     const isMovie = 'title' in item;
                     const title = isMovie ? item.title : item.name;
                     const date = isMovie ? item.release_date : item.first_air_date;
-                    const year = date ? new Date(date).getFullYear() : 'N/A';
+                    const year = date ? new Date(date).getFullYear() : '—';
+                    const rating = item.vote_average ? item.vote_average.toFixed(1) : null;
                     
                     return (
-                      <div
+                      <button
                         key={item.id}
-                        className="group bg-[#0d0d0d] rounded-xl overflow-hidden border border-gray-800 hover:border-[#00bfa6] transition-all cursor-pointer transform hover:scale-105 hover:shadow-xl hover:shadow-[#00bfa6]/20"
+                        className="group relative bg-slate-800/40 hover:bg-slate-800/60 rounded-xl overflow-hidden border border-slate-700 hover:border-blue-500/50 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl hover:shadow-blue-500/10"
                         onClick={() => isMovie ? handleAddMovie(item as TMDBMovie) : handleSelectShow(item as TMDBTVShow)}
                       >
-                        <div className="relative">
+                        {/* Poster */}
+                        <div className="relative aspect-[2/3] bg-slate-900">
                           {item.poster_path ? (
                             <img
-                              src={getTMDBPosterUrl(item.poster_path, 'w200')}
+                              src={getTMDBPosterUrl(item.poster_path, 'w500')}
                               alt={title}
-                              className="w-full h-64 object-cover"
+                              className="w-full h-full object-cover"
+                              loading="lazy"
                             />
                           ) : (
-                            <div className="w-full h-64 bg-gray-900 flex items-center justify-center">
-                              {isMovie ? <Film className="w-12 h-12 text-gray-700" /> : <Tv className="w-12 h-12 text-gray-700" />}
+                            <div className="w-full h-full flex items-center justify-center">
+                              {isMovie ? <Film className="w-12 h-12 text-slate-700" /> : <Tv className="w-12 h-12 text-slate-700" />}
                             </div>
                           )}
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center pb-4">
-                            <div className="px-3 py-2 bg-[#00bfa6] text-black text-xs font-bold rounded-lg flex items-center gap-1">
-                              {isMovie ? <Plus className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                              {isMovie ? 'Adicionar' : 'Escolher Ep.'}
+                          
+                          {/* Rating Badge */}
+                          {rating && Number(rating) > 0 && (
+                            <div className="absolute top-2 right-2 px-2 py-1 bg-black/80 backdrop-blur-sm rounded-md flex items-center gap-1">
+                              <Star className="w-3 h-3 text-yellow-400 fill-yellow-400" />
+                              <span className="text-white text-xs font-bold">{rating}</span>
                             </div>
+                          )}
+                          
+                          {/* Hover Overlay */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-end p-4 gap-2">
+                            <div className="w-12 h-12 bg-blue-500 rounded-full flex items-center justify-center shadow-lg shadow-blue-500/50 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200">
+                              {isMovie ? <Plus className="w-6 h-6 text-white" /> : <ChevronRight className="w-6 h-6 text-white" />}
+                            </div>
+                            <p className="text-white text-xs font-semibold text-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 delay-75">
+                              {isMovie ? 'Add to Playlist' : 'Select Episode'}
+                            </p>
                           </div>
                         </div>
-                        <div className="p-3">
-                          <p className="text-white font-semibold text-sm truncate" title={title}>{title}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <span className="text-gray-400 text-xs">{year}</span>
-                            <div className="flex items-center gap-1">
+
+                        {/* Info */}
+                        <div className="p-3 space-y-1">
+                          <h5 className="text-white font-semibold text-sm line-clamp-2 leading-tight min-h-[2.5rem]" title={title}>
+                            {title}
+                          </h5>
+                          <div className="flex items-center justify-between text-xs">
+                            <span className="text-slate-400 font-medium">{year}</span>
+                            <div className="flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 border border-blue-500/30 rounded text-blue-300 font-medium">
                               {isMovie ? (
-                                <Film className="w-3 h-3 text-[#00bfa6]" />
+                                <>
+                                  <Film className="w-3 h-3" />
+                                  <span className="hidden sm:inline">Movie</span>
+                                </>
                               ) : (
-                                <Tv className="w-3 h-3 text-[#00bfa6]" />
+                                <>
+                                  <Tv className="w-3 h-3" />
+                                  <span className="hidden sm:inline">TV</span>
+                                </>
                               )}
                             </div>
                           </div>
                         </div>
-                      </div>
+                      </button>
                     );
                   })}
                 </div>

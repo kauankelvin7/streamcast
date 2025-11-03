@@ -2,7 +2,8 @@
 <html lang="pt-BR">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+  <!-- Favicon: generated at runtime to avoid extra requests and keep it crisp on all DPIs -->
+  <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEUAAAD///+l2Z/dAAAAEElEQVQYV2NgQAX/GJqBBAAA9m8A2p8kL7wAAAAASUVORK5CYII=" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
@@ -16,5 +17,44 @@
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Generate a neon-blue play favicon dynamically (PNG) and set it as the primary icon
+      (function() {
+        try {
+          const canvas = document.createElement('canvas');
+          canvas.width = 64; canvas.height = 64;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return;
+          // Background
+          ctx.fillStyle = '#0B1220';
+          ctx.fillRect(0, 0, 64, 64);
+          // Soft inner glow circle
+          const grd = ctx.createRadialGradient(32, 32, 6, 32, 32, 28);
+          grd.addColorStop(0, 'rgba(59,130,246,0.35)');
+          grd.addColorStop(1, 'rgba(34,211,238,0.05)');
+          ctx.fillStyle = grd;
+          ctx.beginPath(); ctx.arc(32, 32, 28, 0, Math.PI * 2); ctx.fill();
+          // Play triangle
+          const g = ctx.createLinearGradient(18, 18, 50, 50);
+          g.addColorStop(0, '#60A5FA');
+          g.addColorStop(1, '#22D3EE');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(24, 18);
+          ctx.lineTo(50, 32);
+          ctx.lineTo(24, 46);
+          ctx.closePath();
+          ctx.shadowColor = 'rgba(59,130,246,0.6)';
+          ctx.shadowBlur = 6;
+          ctx.fill();
+          const href = canvas.toDataURL('image/png');
+          const link = document.createElement('link');
+          link.rel = 'icon';
+          link.type = 'image/png';
+          link.href = href;
+          document.head.appendChild(link);
+        } catch(e) {}
+      })();
+    </script>
   </body>
 </html>

@@ -45,3 +45,24 @@ export type PlayerConfig = {
   currentTime?: number;
   lastSyncTime?: number;
 };
+
+// Tipos mínimos para resultados do TMDB usados na UI
+export type TMDBMovie = {
+  id: number;
+  title: string;
+  poster_path: string | null;
+  genre_ids: number[];
+  release_date?: string;
+  overview?: string;
+  vote_average?: number;
+};
+
+export type TMDBTVShow = {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  genre_ids: number[];
+  first_air_date?: string;
+  overview?: string;
+  vote_average?: number;
+};

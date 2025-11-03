@@ -187,7 +187,7 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
     return (
       <div className="w-full h-full flex items-center justify-center bg-linear-to-br from-gray-900 via-black to-gray-900">
         <div className="text-center">
-          <Film className="w-20 h-20 text-[#00bfa6] mx-auto mb-4 opacity-50" />
+          <Film className="w-20 h-20 text-blue-400 mx-auto mb-4 opacity-50" />
           <p className="text-gray-400 text-lg">Nenhum vídeo selecionado</p>
           <p className="text-gray-600 text-sm mt-2">Configure sua playlist no painel Admin</p>
         </div>

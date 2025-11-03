@@ -1,5 +1,5 @@
 ﻿import { useEffect, useState } from 'react';
-import { Settings } from 'lucide-react';
+import { IconSettings2 } from '@tabler/icons-react';
 import type { VideoSource, PlayerConfig, ScheduleItem } from './types';
 import VideoPlayer from './components/VideoPlayer';
 import AdminPanel from './components/AdminPanel';
@@ -110,9 +110,11 @@ export default function CastPlayerApp() {
       
       <button
         onClick={() => setShowAdmin(true)}
-        className="absolute top-2 right-2 sm:top-4 sm:right-4 px-3 py-2 sm:px-4 bg-[#121212] border border-[#00bfa6]/50 text-[#00bfa6] rounded-lg font-semibold hover:bg-[#1e1e1e] hover:border-[#00bfa6] z-40 flex items-center gap-2 transition-colors duration-150 text-sm sm:text-base"
+        className="absolute top-2 right-2 sm:top-4 sm:right-4 px-3 py-2 sm:px-4 rounded-xl font-semibold z-40 flex items-center gap-2 text-sm sm:text-base
+        bg-slate-900/80 border border-blue-500/40 text-blue-300 hover:text-white hover:bg-slate-800/80 hover:border-blue-400/60
+        shadow-lg shadow-blue-500/20 backdrop-blur-sm transition-all duration-200"
       >
-        <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+  <IconSettings2 className="w-4 h-4 sm:w-5 sm:h-5" />
         <span className="hidden sm:inline">Admin</span>
       </button>
       

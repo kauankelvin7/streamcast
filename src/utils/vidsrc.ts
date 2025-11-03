@@ -12,74 +12,96 @@ type EpisodeUrlOptions = MovieUrlOptions & {
   autonext?: boolean;
 };
 
+/**
+ * EmbedMaster - Movie Embed URL
+ * https://embedmaster.link/movie/{id}
+ * {id} pode ser IMDb (com prefixo tt) ou TMDb
+ */
 export function buildMovieUrl(opts: MovieUrlOptions): string {
-  const base = 'https://vidsrc-embed.ru/embed/movie';
-  const params = new URLSearchParams();
+  const base = 'https://embedmaster.link/movie';
   
-  if (opts.ds_lang) params.set('ds_lang', opts.ds_lang);
-  if (opts.autoplay) params.set('autoplay', '1');
-  if (opts.sub_url) params.set('sub_url', opts.sub_url);
-  
+  // Prioriza IMDb (com tt)
   if (opts.imdb && /^tt\d+/i.test(opts.imdb)) {
-    const query = params.toString();
-    return query ? `${base}/${opts.imdb}?${query}` : `${base}/${opts.imdb}`;
+    return `${base}/${opts.imdb}`;
   }
   
+  // Usa TMDb se disponível
   if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
-    const query = params.toString();
-    return query ? `${base}/${opts.tmdb}?${query}` : `${base}/${opts.tmdb}`;
+    return `${base}/${opts.tmdb}`;
   }
   
-  if (opts.imdb) params.set('imdb', opts.imdb);
-  if (opts.tmdb) params.set('tmdb', String(opts.tmdb));
-  return `${base}?${params.toString()}`;
+  // Fallback: tenta IMDb sem validação
+  if (opts.imdb) {
+    const cleanId = opts.imdb.replace(/^tt/i, '');
+    return `${base}/tt${cleanId}`;
+  }
+  
+  // Última tentativa: TMDb
+  if (opts.tmdb) {
+    return `${base}/${opts.tmdb}`;
+  }
+  
+  return base;
 }
 
+/**
+ * EmbedMaster - TV Show Embed URL (sem episódio específico)
+ * https://embedmaster.link/tv/{id}
+ */
 export function buildTvUrl(opts: MovieUrlOptions): string {
-  const base = 'https://vidsrc-embed.ru/embed/tv';
-  const params = new URLSearchParams();
+  const base = 'https://embedmaster.link/tv';
   
-  if (opts.ds_lang) params.set('ds_lang', opts.ds_lang);
-  
+  // Prioriza IMDb (com tt)
   if (opts.imdb && /^tt\d+/i.test(opts.imdb)) {
-    const query = params.toString();
-    return query ? `${base}/${opts.imdb}?${query}` : `${base}/${opts.imdb}`;
+    return `${base}/${opts.imdb}`;
   }
   
+  // Usa TMDb se disponível
   if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
-    const query = params.toString();
-    return query ? `${base}/${opts.tmdb}?${query}` : `${base}/${opts.tmdb}`;
+    return `${base}/${opts.tmdb}`;
   }
   
-  if (opts.imdb) params.set('imdb', opts.imdb);
-  if (opts.tmdb) params.set('tmdb', String(opts.tmdb));
-  return `${base}?${params.toString()}`;
+  // Fallback: tenta IMDb sem validação
+  if (opts.imdb) {
+    const cleanId = opts.imdb.replace(/^tt/i, '');
+    return `${base}/tt${cleanId}`;
+  }
+  
+  // Última tentativa: TMDb
+  if (opts.tmdb) {
+    return `${base}/${opts.tmdb}`;
+  }
+  
+  return base;
 }
 
+/**
+ * EmbedMaster - TV Episode Embed URL
+ * https://embedmaster.link/tv/{id}/{season}/{episode}
+ */
 export function buildEpisodeUrl(opts: EpisodeUrlOptions): string {
-  const base = 'https://vidsrc-embed.ru/embed/tv';
-  const params = new URLSearchParams();
+  const base = 'https://embedmaster.link/tv';
   
-  if (opts.ds_lang) params.set('ds_lang', opts.ds_lang);
-  if (opts.autoplay) params.set('autoplay', '1');
-  if (opts.autonext) params.set('autonext', '1');
-  if (opts.sub_url) params.set('sub_url', opts.sub_url);
-  
+  // Prioriza IMDb (com tt)
   if (opts.imdb && /^tt\d+/i.test(opts.imdb)) {
-    const path = `${opts.imdb}/${opts.season}-${opts.episode}`;
-    const query = params.toString();
-    return query ? `${base}/${path}?${query}` : `${base}/${path}`;
+    return `${base}/${opts.imdb}/${opts.season}/${opts.episode}`;
   }
   
+  // Usa TMDb se disponível
   if (opts.tmdb && String(opts.tmdb).match(/^\d+$/)) {
-    const path = `${opts.tmdb}/${opts.season}-${opts.episode}`;
-    const query = params.toString();
-    return query ? `${base}/${path}?${query}` : `${base}/${path}`;
+    return `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
   }
   
-  params.set('season', String(opts.season));
-  params.set('episode', String(opts.episode));
-  if (opts.imdb) params.set('imdb', opts.imdb);
-  if (opts.tmdb) params.set('tmdb', String(opts.tmdb));
-  return `${base}?${params.toString()}`;
+  // Fallback: tenta IMDb sem validação
+  if (opts.imdb) {
+    const cleanId = opts.imdb.replace(/^tt/i, '');
+    return `${base}/tt${cleanId}/${opts.season}/${opts.episode}`;
+  }
+  
+  // Última tentativa: TMDb
+  if (opts.tmdb) {
+    return `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
+  }
+  
+  return base;
 }
