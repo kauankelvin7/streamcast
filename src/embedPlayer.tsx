@@ -24,21 +24,34 @@ export default function EmbedPlayer() {
     const pl = await loadData<VideoSource[]>(STORAGE_KEYS.PLAYLIST, []);
     const sch = await loadData<ScheduleItem[]>(STORAGE_KEYS.SCHEDULES, []);
     
-    console.log('🔄 [EMBED] Carregando dados:', { config: cfg, playlist: pl.length, schedules: sch.length });
+    console.log('🔄 [EMBED] Carregando dados:', { 
+      config: cfg, 
+      playlist: pl.length, 
+      schedules: sch.length,
+      currentVideoId: cfg.currentVideoId 
+    });
+    
     setConfig(cfg);
     
     let videoToPlay: VideoSource | null = null;
     
-    if (cfg.useSchedule) {
+    if (cfg.useSchedule && sch.length > 0) {
       videoToPlay = getActiveSchedule(sch, pl);
+      console.log('📅 [EMBED] Modo Schedule ativo:', videoToPlay?.title || 'Nenhum no horário');
     }
     
-    if (!videoToPlay) {
+    if (!videoToPlay && pl.length > 0) {
       if (cfg.currentVideoId) {
         videoToPlay = pl.find(v => v.id === cfg.currentVideoId) || pl[0] || null;
+        console.log('🎯 [EMBED] Vídeo por ID:', videoToPlay?.title);
       } else {
         videoToPlay = pl[0] || null;
+        console.log('🎲 [EMBED] Primeiro vídeo da playlist:', videoToPlay?.title);
       }
+    }
+    
+    if (pl.length === 0) {
+      console.warn('⚠️ [EMBED] Playlist vazia! Configure vídeos no Admin.');
     }
     
     console.log('🎬 [EMBED] Vídeo selecionado:', videoToPlay?.title || 'Nenhum');
