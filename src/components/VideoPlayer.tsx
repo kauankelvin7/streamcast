@@ -1,18 +1,22 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Film } from 'lucide-react';
 import type { VideoSource, PlayerConfig } from '../types';
 import { buildMovieUrl, buildTvUrl, buildEpisodeUrl } from '../utils/vidsrc';
 import { detectVideoType, getYouTubeEmbedUrl } from '../utils/videoDetector';
+import { listenToPlayerState, sendPlayerState } from '../utils/playerSync';
 
 type VideoPlayerProps = {
   config: PlayerConfig;
   currentVideo: VideoSource | null;
   onVideoEnd?: () => void;
+  enableSync?: boolean; // Habilita sincronização em tempo real
+  isController?: boolean; // Se é o player controlador (admin)
 };
 
-export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoPlayerProps) {
+export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSync = false, isController = false }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   
   useEffect(() => {
     if (videoRef.current && currentVideo?.type === 'direct') {
@@ -29,11 +33,83 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
       
       video.addEventListener('ended', handleEnded);
       
+      // SINCRONIZAÇÃO EM TEMPO REAL (vídeos diretos)
+      if (enableSync && currentVideo) {
+        // Se é CONTROLADOR (admin): envia eventos
+        if (isController) {
+          const handlePlay = () => {
+            sendPlayerState({
+              isPlaying: true,
+              currentTime: video.currentTime,
+              videoId: currentVideo.id,
+              timestamp: Date.now()
+            });
+          };
+          
+          const handlePause = () => {
+            sendPlayerState({
+              isPlaying: false,
+              currentTime: video.currentTime,
+              videoId: currentVideo.id,
+              timestamp: Date.now()
+            });
+          };
+          
+          const handleSeeked = () => {
+            sendPlayerState({
+              isPlaying: !video.paused,
+              currentTime: video.currentTime,
+              videoId: currentVideo.id,
+              timestamp: Date.now()
+            });
+          };
+          
+          video.addEventListener('play', handlePlay);
+          video.addEventListener('pause', handlePause);
+          video.addEventListener('seeked', handleSeeked);
+          
+          return () => {
+            video.removeEventListener('ended', handleEnded);
+            video.removeEventListener('play', handlePlay);
+            video.removeEventListener('pause', handlePause);
+            video.removeEventListener('seeked', handleSeeked);
+          };
+        }
+        
+        // Se é VISUALIZADOR (embed): recebe eventos
+        const unsubscribe = listenToPlayerState((state) => {
+          if (!state || state.videoId !== currentVideo.id || isSyncing) return;
+          
+          setIsSyncing(true);
+          
+          const timeDiff = Math.abs(video.currentTime - state.currentTime);
+          
+          // Sincroniza tempo se diferença > 2s
+          if (timeDiff > 2) {
+            video.currentTime = state.currentTime;
+          }
+          
+          // Sincroniza play/pause
+          if (state.isPlaying && video.paused) {
+            video.play().catch(() => {});
+          } else if (!state.isPlaying && !video.paused) {
+            video.pause();
+          }
+          
+          setTimeout(() => setIsSyncing(false), 500);
+        });
+        
+        return () => {
+          video.removeEventListener('ended', handleEnded);
+          unsubscribe();
+        };
+      }
+      
       return () => {
         video.removeEventListener('ended', handleEnded);
       };
     }
-  }, [currentVideo, config, onVideoEnd]);
+  }, [currentVideo, config, onVideoEnd, enableSync, isController, isSyncing]);
 
   useEffect(() => {
     if (!iframeRef.current || currentVideo?.type === 'direct' || !currentVideo) return;

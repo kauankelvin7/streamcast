@@ -36,4 +36,9 @@ export type PlayerConfig = {
   ds_lang: string;
   useSchedule: boolean;
   tmdbApiKey: string;
+  
+  // Sincronização em tempo real
+  isPlaying?: boolean;
+  currentTime?: number;
+  lastSyncTime?: number;
 };
