@@ -12,7 +12,8 @@ const DEFAULT_CONFIG: PlayerConfig = {
   currentVideoId: null,
   ds_lang: 'pt-BR',
   useSchedule: true,
-  tmdbApiKey: ''
+  tmdbApiKey: '',
+  playerMode: 'vidsrc' // Modo padrão
 };
 
 export default function EmbedPlayer() {
