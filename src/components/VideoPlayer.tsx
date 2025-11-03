@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Film } from 'lucide-react';
 import type { VideoSource, PlayerConfig } from '../types';
 import { buildMovieUrl, buildTvUrl, buildEpisodeUrl } from '../utils/vidsrc';
+import { detectVideoType, getYouTubeEmbedUrl } from '../utils/videoDetector';
 
 type VideoPlayerProps = {
   config: PlayerConfig;
@@ -119,6 +120,29 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
   }
   
   if (currentVideo.type === 'direct') {
+    const detected = detectVideoType(currentVideo.url);
+    
+    // YouTube detectado automaticamente
+    if (detected.type === 'youtube') {
+      const youtubeUrl = getYouTubeEmbedUrl(currentVideo.url, config.autoplay, config.muted);
+      
+      return (
+        <div className="relative w-full h-full bg-black">
+          <iframe
+            key={currentVideo.id}
+            src={youtubeUrl}
+            title={currentVideo.title}
+            className="w-full h-full border-0"
+            allow="autoplay; fullscreen; picture-in-picture; encrypted-media; accelerometer; gyroscope"
+            allowFullScreen
+            referrerPolicy="origin"
+            style={{ minHeight: '500px' }}
+          />
+        </div>
+      );
+    }
+    
+    // Vídeo direto (MP4, WebM, etc)
     return (
       <video
         ref={videoRef}
