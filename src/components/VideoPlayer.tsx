@@ -37,34 +37,73 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoP
   useEffect(() => {
     if (!iframeRef.current || currentVideo?.type === 'direct' || !currentVideo) return;
 
-    const clickPlayAfterLoad = () => {
-      const iframe = iframeRef.current;
-      if (!iframe) return;
+    const iframe = iframeRef.current;
+    let interactionAttempts = 0;
+    const maxAttempts = 10;
 
-      const attempts = [2000, 4000];
+    const simulateInteraction = () => {
+      if (!iframe || interactionAttempts >= maxAttempts) return;
       
-      attempts.forEach((delay) => {
-        setTimeout(() => {
-          try {
-            const iframeRect = iframe.getBoundingClientRect();
-            const centerX = iframeRect.left + iframeRect.width / 2;
-            const centerY = iframeRect.top + iframeRect.height / 2;
-            
-            const clickEvent = new MouseEvent('click', {
-              view: window,
-              bubbles: true,
-              cancelable: true,
-              clientX: centerX,
-              clientY: centerY
-            });
-            
-            iframe.dispatchEvent(clickEvent);
-          } catch (error) {}
-        }, delay);
-      });
+      try {
+        const iframeRect = iframe.getBoundingClientRect();
+        const centerX = iframeRect.left + iframeRect.width / 2;
+        const centerY = iframeRect.top + iframeRect.height / 2;
+        
+        // Simula movimento do mouse
+        const mouseMoveEvent = new MouseEvent('mousemove', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: centerX,
+          clientY: centerY
+        });
+        iframe.dispatchEvent(mouseMoveEvent);
+        
+        // Simula clique
+        const clickEvent = new MouseEvent('click', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: centerX,
+          clientY: centerY
+        });
+        iframe.dispatchEvent(clickEvent);
+        
+        // Simula pointer down/up
+        const pointerDownEvent = new PointerEvent('pointerdown', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: centerX,
+          clientY: centerY
+        });
+        iframe.dispatchEvent(pointerDownEvent);
+        
+        const pointerUpEvent = new PointerEvent('pointerup', {
+          view: window,
+          bubbles: true,
+          cancelable: true,
+          clientX: centerX,
+          clientY: centerY
+        });
+        iframe.dispatchEvent(pointerUpEvent);
+        
+        interactionAttempts++;
+      } catch (error) {}
     };
 
-    clickPlayAfterLoad();
+    // Múltiplas tentativas em diferentes intervalos
+    const timeouts = [1500, 3000, 5000, 7000, 9000, 11000, 13000, 15000, 20000, 25000];
+    const timeoutIds: NodeJS.Timeout[] = [];
+    
+    timeouts.forEach((delay) => {
+      const id = setTimeout(simulateInteraction, delay);
+      timeoutIds.push(id);
+    });
+
+    return () => {
+      timeoutIds.forEach(id => clearTimeout(id));
+    };
   }, [currentVideo]);
   
   if (!currentVideo) {
