@@ -4,11 +4,9 @@
  */
 
 export class AdBlocker {
-  private originalWindowOpen: typeof window.open;
   private blockedAttempts: number = 0;
   
   constructor() {
-    this.originalWindowOpen = window.open;
     this.init();
   }
   
@@ -30,6 +28,8 @@ export class AdBlocker {
    * Bloqueia window.open (pop-ups)
    */
   private blockPopups() {
+    const originalOpen = window.open;
+    
     window.open = (...args) => {
       this.blockedAttempts++;
       console.log(`🚫 Pop-up bloqueado #${this.blockedAttempts}:`, args[0]);
@@ -39,7 +39,7 @@ export class AdBlocker {
       const trustedDomains = [window.location.hostname];
       
       if (trustedDomains.some(domain => url.includes(domain))) {
-        return this.originalWindowOpen.apply(window, args);
+        return originalOpen.apply(window, args);
       }
       
       return null;
@@ -50,29 +50,27 @@ export class AdBlocker {
    * Bloqueia redirecionamentos automáticos
    */
   private blockRedirects() {
-    const originalAssign = window.location.assign;
-    const originalReplace = window.location.replace;
+    // Intercepta tentativas de redirecionamento via location.href
+    let originalHref = window.location.href;
     
-    Object.defineProperty(window.location, 'assign', {
-      value: (url: string) => {
-        if (this.isAllowedUrl(url)) {
-          originalAssign.call(window.location, url);
-        } else {
-          console.log('🚫 Redirecionamento bloqueado:', url);
+    // Monitora mudanças no location.href via setInterval
+    const checkInterval = setInterval(() => {
+      if (window.location.href !== originalHref) {
+        const newUrl = window.location.href;
+        if (!this.isAllowedUrl(newUrl)) {
+          console.log('🚫 Redirecionamento suspeito detectado:', newUrl);
           this.blockedAttempts++;
+          // Volta para URL original
+          window.history.replaceState(null, '', originalHref);
+        } else {
+          originalHref = newUrl;
         }
       }
-    });
+    }, 100);
     
-    Object.defineProperty(window.location, 'replace', {
-      value: (url: string) => {
-        if (this.isAllowedUrl(url)) {
-          originalReplace.call(window.location, url);
-        } else {
-          console.log('🚫 Redirecionamento bloqueado:', url);
-          this.blockedAttempts++;
-        }
-      }
+    // Limpa interval quando a página for fechada
+    window.addEventListener('beforeunload', () => {
+      clearInterval(checkInterval);
     });
   }
   
@@ -299,8 +297,8 @@ export class AdBlocker {
    * Desativa o AdBlocker (se necessário)
    */
   destroy() {
-    window.open = this.originalWindowOpen;
     console.log('🛡️ AdBlocker desativado');
+    // Nota: Alguns bloqueios não podem ser revertidos sem recarregar a página
   }
 }
 
