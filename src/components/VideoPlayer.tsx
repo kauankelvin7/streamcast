@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Film } from 'lucide-react';
 import type { VideoSource, PlayerConfig } from '../types';
 import { buildMovieUrl, buildTvUrl, buildEpisodeUrl } from '../utils/vidsrc';
-import { useAdBlocker } from '../utils/adblock';
 
 type VideoPlayerProps = {
   config: PlayerConfig;
@@ -13,23 +12,6 @@ type VideoPlayerProps = {
 export default function VideoPlayer({ config, currentVideo, onVideoEnd }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  
-  // Ativa o AdBlocker
-  const adBlocker = useAdBlocker();
-  
-  useEffect(() => {
-    // Log de estatísticas do AdBlocker a cada 30 segundos
-    const statsInterval = setInterval(() => {
-      if (adBlocker) {
-        const stats = adBlocker.getStats();
-        if (stats.blockedAttempts > 0) {
-          console.log(`�️ AdBlocker: ${stats.blockedAttempts} tentativas de propaganda bloqueadas`);
-        }
-      }
-    }, 30000);
-    
-    return () => clearInterval(statsInterval);
-  }, [adBlocker]);
   
   useEffect(() => {
     if (videoRef.current && currentVideo?.type === 'direct') {
