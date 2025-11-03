@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Storage - StreamCast</title>
+    <style>
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #00ff00;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            border-radius: 5px;
+        }
+        h2 {
+            color: #00bfa6;
+            margin-top: 0;
+        }
+        pre {
+            background: #000;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .empty {
+            color: #ff6b6b;
+        }
+        button {
+            background: #00bfa6;
+            color: #000;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 5px;
+        }
+        button:hover {
+            background: #00d4b8;
+        }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Storage - StreamCast</h1>
+    
+    <button onclick="location.reload()">🔄 Recarregar</button>
+    <button onclick="clearAll()">🗑️ Limpar Tudo</button>
+    <button onclick="window.open('http://localhost:3000', '_blank')">🚀 Abrir Admin</button>
+    
+    <div class="section">
+        <h2>📋 CONFIG (streamcast-config)</h2>
+        <pre id="config"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>🎬 PLAYLIST (streamcast-playlist)</h2>
+        <pre id="playlist"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>⏰ SCHEDULES (streamcast-schedules)</h2>
+        <pre id="schedules"></pre>
+    </div>
+    
+    <div class="section">
+        <h2>📦 TODOS OS DADOS NO LOCALSTORAGE</h2>
+        <pre id="all"></pre>
+    </div>
+
+    <script>
+        function loadData() {
+            // CONFIG
+            const config = localStorage.getItem('streamcast-config');
+            document.getElementById('config').innerHTML = config 
+                ? JSON.stringify(JSON.parse(config), null, 2)
+                : '<span class="empty">❌ Vazio - Configure no Admin Panel</span>';
+            
+            // PLAYLIST
+            const playlist = localStorage.getItem('streamcast-playlist');
+            const playlistData = playlist ? JSON.parse(playlist) : [];
+            document.getElementById('playlist').innerHTML = playlistData.length > 0
+                ? JSON.stringify(playlistData, null, 2)
+                : '<span class="empty">❌ Vazio - Adicione vídeos no Admin Panel</span>';
+            
+            // SCHEDULES
+            const schedules = localStorage.getItem('streamcast-schedules');
+            const schedulesData = schedules ? JSON.parse(schedules) : [];
+            document.getElementById('schedules').innerHTML = schedulesData.length > 0
+                ? JSON.stringify(schedulesData, null, 2)
+                : '<span class="empty">❌ Vazio - Configure horários no Admin Panel</span>';
+            
+            // ALL
+            const allKeys = Object.keys(localStorage).filter(k => k.startsWith('streamcast-'));
+            const allData = {};
+            allKeys.forEach(key => {
+                try {
+                    allData[key] = JSON.parse(localStorage.getItem(key));
+                } catch {
+                    allData[key] = localStorage.getItem(key);
+                }
+            });
+            
+            document.getElementById('all').innerHTML = allKeys.length > 0
+                ? JSON.stringify(allData, null, 2)
+                : '<span class="empty">❌ Nenhum dado encontrado</span>';
+            
+            console.log('📊 Dados carregados:', {
+                config: config ? JSON.parse(config) : null,
+                playlist: playlistData,
+                schedules: schedulesData
+            });
+        }
+        
+        function clearAll() {
+            if (confirm('⚠️ Tem certeza? Isso vai apagar TODOS os dados!')) {
+                localStorage.clear();
+                alert('✅ Todos os dados foram apagados!');
+                location.reload();
+            }
+        }
+        
+        // Carregar ao abrir
+        loadData();
+        
+        // Recarregar quando localStorage mudar
+        window.addEventListener('storage', loadData);
+        
+        // Recarregar a cada 2 segundos
+        setInterval(loadData, 2000);
+    </script>
+</body>
+</html>
