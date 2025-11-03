@@ -8,6 +8,8 @@ export interface VideoDetection {
   type: DetectedVideoType;
   url: string;
   videoId?: string;
+  playlistId?: string;
+  isPlaylist?: boolean;
 }
 
 /**
@@ -23,6 +25,21 @@ function isYouTubeUrl(url: string): boolean {
 function extractYouTubeId(url: string): string | null {
   const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/);
   return match ? match[1] : null;
+}
+
+/**
+ * Extrai ID da playlist do YouTube
+ */
+function extractYouTubePlaylistId(url: string): string | null {
+  const match = url.match(/[?&]list=([a-zA-Z0-9_-]+)/);
+  return match ? match[1] : null;
+}
+
+/**
+ * Verifica se é playlist do YouTube
+ */
+function isYouTubePlaylist(url: string): boolean {
+  return /[?&]list=/.test(url);
 }
 
 /**
@@ -62,11 +79,26 @@ export function detectVideoType(url: string): VideoDetection {
   // YouTube
   if (isYouTubeUrl(url)) {
     const videoId = extractYouTubeId(url);
+    const playlistId = extractYouTubePlaylistId(url);
+    const isPlaylist = isYouTubePlaylist(url);
+    
+    if (isPlaylist && playlistId) {
+      // Playlist do YouTube
+      return {
+        type: 'youtube',
+        url: `https://www.youtube.com/embed/videoseries?list=${playlistId}`,
+        playlistId,
+        isPlaylist: true
+      };
+    }
+    
     if (videoId) {
+      // Vídeo único do YouTube
       return {
         type: 'youtube',
         url: `https://www.youtube.com/embed/${videoId}`,
-        videoId
+        videoId,
+        isPlaylist: false
       };
     }
   }
@@ -91,7 +123,8 @@ export function detectVideoType(url: string): VideoDetection {
  */
 export function getYouTubeEmbedUrl(url: string, autoplay: boolean = false, muted: boolean = false): string {
   const videoId = extractYouTubeId(url);
-  if (!videoId) return url;
+  const playlistId = extractYouTubePlaylistId(url);
+  const isPlaylist = isYouTubePlaylist(url);
   
   const params = new URLSearchParams({
     autoplay: autoplay ? '1' : '0',
@@ -100,6 +133,21 @@ export function getYouTubeEmbedUrl(url: string, autoplay: boolean = false, muted
     modestbranding: '1'
   });
   
+  // Se for playlist
+  if (isPlaylist && playlistId) {
+    params.set('list', playlistId);
+    
+    // Se tiver vídeo inicial, adiciona
+    if (videoId) {
+      return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
+    }
+    
+    // Playlist sem vídeo inicial
+    return `https://www.youtube.com/embed/videoseries?${params.toString()}`;
+  }
+  
+  // Vídeo único
+  if (!videoId) return url;
   return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
 }
 
