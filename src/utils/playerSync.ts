@@ -35,10 +35,6 @@ function initBroadcastChannel() {
 
 // Inicializa Firebase (sincronização global cross-origin)
 function initFirebaseSync(): boolean {
-  // TEMPORARIAMENTE DESABILITADO - Firebase com erro de permissão
-  return false;
-  
-  /*
   if (firebaseDb) return true;
   
   try {
@@ -52,7 +48,6 @@ function initFirebaseSync(): boolean {
   }
   
   return false;
-  */
 }
 
 /**
