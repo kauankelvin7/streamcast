@@ -19,22 +19,41 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
   const [uploadVideoUrl, setUploadVideoUrl] = useState<string | null>(null);
+  const [uploadError, setUploadError] = useState(false);
   
   // Carrega vídeo do IndexedDB quando necessário
   useEffect(() => {
     if (currentVideo?.type === 'upload' && currentVideo.url.startsWith('indexeddb://')) {
       const videoId = currentVideo.url.replace('indexeddb://', '');
       
+      setUploadError(false);
+      setUploadVideoUrl(null);
+      
+      // Timeout de 10 segundos
+      const timeoutId = setTimeout(() => {
+        if (!uploadVideoUrl) {
+          console.error('⏱️ Timeout ao carregar vídeo do IndexedDB');
+          setUploadError(true);
+        }
+      }, 10000);
+      
       loadVideoBlob(videoId).then((blobUrl) => {
+        clearTimeout(timeoutId);
         if (blobUrl) {
           setUploadVideoUrl(blobUrl);
         } else {
-          console.error('❌ Falha ao carregar vídeo do IndexedDB:', videoId);
+          console.error('❌ Vídeo não encontrado no IndexedDB:', videoId);
+          setUploadError(true);
         }
+      }).catch((error) => {
+        clearTimeout(timeoutId);
+        console.error('❌ Erro ao carregar vídeo:', error);
+        setUploadError(true);
       });
       
       // Cleanup: revoga Blob URL quando componente desmonta ou vídeo muda
       return () => {
+        clearTimeout(timeoutId);
         if (uploadVideoUrl) {
           URL.revokeObjectURL(uploadVideoUrl);
           setUploadVideoUrl(null);
@@ -42,6 +61,7 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
       };
     } else {
       setUploadVideoUrl(null);
+      setUploadError(false);
     }
   }, [currentVideo]);
   
@@ -253,6 +273,35 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
   
   // MODO UPLOAD (vídeos enviados pelo usuário - IndexedDB)
   if (currentVideo.type === 'upload') {
+    // Erro ao carregar do IndexedDB
+    if (uploadError) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          <div className="text-center max-w-md px-6">
+            <div className="w-20 h-20 bg-red-500/10 border-2 border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-white text-xl font-bold mb-3">Vídeo não disponível</p>
+            <p className="text-red-300 text-sm mb-2">
+              ⚠️ Este vídeo foi enviado em <strong>outro dispositivo/navegador</strong>
+            </p>
+            <p className="text-slate-400 text-xs mb-4">
+              Vídeos do tipo "upload" são armazenados localmente no IndexedDB de cada navegador.
+              Para reproduzir em outros dispositivos, você precisa fazer o upload novamente neste navegador.
+            </p>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3 text-left">
+              <p className="text-blue-300 text-xs">
+                💡 <strong>Dica:</strong> Para compartilhar vídeos entre dispositivos, use URLs diretas 
+                (YouTube, Vimeo, etc.) ou hospede os arquivos em um servidor.
+              </p>
+            </div>
+          </div>
+        </div>
+      );
+    }
+    
     // Se ainda está carregando do IndexedDB
     if (!uploadVideoUrl && currentVideo.url.startsWith('indexeddb://')) {
       return (

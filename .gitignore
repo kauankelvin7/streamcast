@@ -6,6 +6,15 @@ dist/
 dist-ssr/
 *.local
 
+# Videos folder (não commitar vídeos grandes)
+videos/
+*.mp4
+*.mkv
+*.avi
+*.mov
+*.webm
+*.flv
+
 # Editor directories
 .vscode/*
 !.vscode/extensions.json
