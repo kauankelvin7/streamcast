@@ -13,6 +13,8 @@ export interface PlayerSyncState {
   currentTime: number;
   videoId: string;
   timestamp: number;
+  muted?: boolean;
+  volume?: number;
 }
 
 let bc: BroadcastChannel | null = null;

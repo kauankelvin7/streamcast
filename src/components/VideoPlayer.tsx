@@ -42,7 +42,9 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
               isPlaying: true,
               currentTime: video.currentTime,
               videoId: currentVideo.id,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              muted: video.muted,
+              volume: video.volume
             });
           };
           
@@ -51,7 +53,9 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
               isPlaying: false,
               currentTime: video.currentTime,
               videoId: currentVideo.id,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              muted: video.muted,
+              volume: video.volume
             });
           };
           
@@ -60,19 +64,34 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
               isPlaying: !video.paused,
               currentTime: video.currentTime,
               videoId: currentVideo.id,
-              timestamp: Date.now()
+              timestamp: Date.now(),
+              muted: video.muted,
+              volume: video.volume
+            });
+          };
+          
+          const handleVolumeChange = () => {
+            sendPlayerState({
+              isPlaying: !video.paused,
+              currentTime: video.currentTime,
+              videoId: currentVideo.id,
+              timestamp: Date.now(),
+              muted: video.muted,
+              volume: video.volume
             });
           };
           
           video.addEventListener('play', handlePlay);
           video.addEventListener('pause', handlePause);
           video.addEventListener('seeked', handleSeeked);
+          video.addEventListener('volumechange', handleVolumeChange);
           
           return () => {
             video.removeEventListener('ended', handleEnded);
             video.removeEventListener('play', handlePlay);
             video.removeEventListener('pause', handlePause);
             video.removeEventListener('seeked', handleSeeked);
+            video.removeEventListener('volumechange', handleVolumeChange);
           };
         }
         
@@ -94,6 +113,15 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
             video.play().catch(() => {});
           } else if (!state.isPlaying && !video.paused) {
             video.pause();
+          }
+          
+          // Sincroniza mute/volume
+          if (state.muted !== undefined && video.muted !== state.muted) {
+            video.muted = state.muted;
+          }
+          
+          if (state.volume !== undefined && video.volume !== state.volume) {
+            video.volume = state.volume;
           }
           
           setTimeout(() => setIsSyncing(false), 500);
