@@ -102,7 +102,15 @@ export default function CastPlayerApp() {
     <div className="relative w-full h-screen bg-black overflow-hidden">
       <div className="absolute inset-0">
         <VideoPlayer 
-          config={config} 
+          config={{
+            ...config,
+            // Define playerMode baseado no tipo do vídeo atual
+            playerMode: currentVideo?.type === 'direct' || currentVideo?.type === 'upload' 
+              ? 'direct' 
+              : currentVideo?.url?.includes('youtube.com') || currentVideo?.url?.includes('youtu.be')
+              ? 'youtube'
+              : config.playerMode
+          }} 
           currentVideo={currentVideo}
           onVideoEnd={handleVideoEnd}
           enableSync={true}

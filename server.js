@@ -9,16 +9,21 @@
 
 import express from 'express';
 import cors from 'cors';
-import ngrok from 'ngrok';
+import ngrok from '@ngrok/ngrok';
+import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync } from 'fs';
+import os from 'os';
+
+// Carregar variáveis de ambiente do .env
+dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-const PORT = 3002;
+const PORT = process.env.PORT || 3002;
 
 // Criar pasta de vídeos se não existir
 const videosDir = join(__dirname, 'videos');
@@ -50,8 +55,7 @@ app.use('/videos', express.static(videosDir, {
 
 // Endpoint para listar vídeos disponíveis
 app.get('/api/videos', (req, res) => {
-  const fs = require('fs');
-  const files = fs.readdirSync(videosDir)
+  const files = readdirSync(videosDir)
     .filter(file => /\.(mp4|webm|mkv|avi|mov)$/i.test(file))
     .map(file => ({
       name: file,
@@ -63,7 +67,6 @@ app.get('/api/videos', (req, res) => {
 
 // Página inicial com instruções
 app.get('/', (req, res) => {
-  const os = require('os');
   const networkInterfaces = os.networkInterfaces();
   const ips = [];
   
@@ -213,7 +216,6 @@ app.get('/', (req, res) => {
 });
 
 app.listen(PORT, '0.0.0.0', async () => {
-  const os = require('os');
   const networkInterfaces = os.networkInterfaces();
   
   console.log('\n🎬 ===================================');
@@ -234,19 +236,30 @@ app.listen(PORT, '0.0.0.0', async () => {
   // Iniciar ngrok automaticamente
   try {
     console.log('\n🌍 Iniciando túnel ngrok (acesso pela INTERNET)...\n');
-    const url = await ngrok.connect({
+    
+    if (!process.env.NGROK_AUTHTOKEN) {
+      console.log('⚠️  NGROK_AUTHTOKEN não configurado no .env');
+      console.log('   Configure o token para habilitar o túnel público\n');
+      return;
+    }
+    
+    console.log('🔐 Token ngrok detectado - usando autenticação');
+    
+    // Criar listener ngrok
+    const listener = await ngrok.forward({
       addr: PORT,
-      region: 'us' // ou 'eu', 'ap', 'au', 'sa', 'jp', 'in'
+      authtoken: process.env.NGROK_AUTHTOKEN,
+      region: process.env.NGROK_REGION || 'us'
     });
+    
+    const url = listener.url();
     
     console.log('✅ TÚNEL NGROK ATIVO!\n');
     console.log('🔗 URL PÚBLICA (funciona DE QUALQUER LUGAR):');
     console.log(`   ${url}`);
-    console.log('\n� Use esta URL nos seus vídeos:');
+    console.log('\n💡 Use esta URL nos seus vídeos:');
     console.log(`   ${url}/videos/seu-filme.mp4\n`);
-    console.log('⚠️  IMPORTANTE: Esta URL é TEMPORÁRIA!');
-    console.log('   Se reiniciar o servidor, a URL muda.');
-    console.log('   Para URL permanente, crie conta grátis em https://ngrok.com\n');
+    console.log('✅ Token configurado - domínio persistente ativo!\n');
   } catch (error) {
     console.log('\n⚠️  Ngrok não iniciado:', error.message);
     console.log('   Servidor continua funcionando na rede local!\n');

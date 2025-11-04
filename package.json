@@ -11,12 +11,13 @@
     "server:local": "node server.js --local-only"
   },
   "dependencies": {
+    "@ngrok/ngrok": "^1.5.2",
     "@tabler/icons-react": "^3.28.1",
     "cors": "^2.8.5",
+    "dotenv": "^17.2.3",
     "express": "^4.21.2",
     "firebase": "^10.13.1",
     "lucide-react": "^0.454.0",
-    "ngrok": "^5.0.0-beta.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
