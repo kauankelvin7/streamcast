@@ -1,13 +1,12 @@
 /**
- * Sincronização de player em tempo real via Firebase
- * Permite controlar play/pause/seek em todos os players conectados
+ * Sincronização de player em tempo real
+ * 
+ * - BroadcastChannel: Sincroniza entre abas/janelas no mesmo domínio (local)
+ * - Firebase Realtime Database: Sincroniza entre diferentes sites/dispositivos (global)
  */
 
-/**
- * Player synchronization utilities.
- * Primary channel: BroadcastChannel (local / simple multi-tab/users on same origin)
- * Optional: Firebase realtime database if `api/firebase` is configured.
- */
+import { getDatabase, ref, set, onValue, off } from 'firebase/database';
+import { initFirebase, isFirebaseEnabled } from '../api/firebase';
 
 export interface PlayerSyncState {
   isPlaying: boolean;
@@ -17,89 +16,104 @@ export interface PlayerSyncState {
 }
 
 let bc: BroadcastChannel | null = null;
-let firebaseAvailable = false;
-let firebaseUnsubscribe: (() => void) | null = null;
+let firebaseDb: any = null;
 
-// Try to initialize BroadcastChannel
+// Inicializa BroadcastChannel (sincronização local)
 function initBroadcastChannel() {
   try {
-    bc = new BroadcastChannel('streamcast-player-sync');
+    if (!bc) {
+      bc = new BroadcastChannel('streamcast-player-sync');
+      console.log('📡 BroadcastChannel inicializado (sync local)');
+    }
   } catch (e) {
+    console.warn('⚠️ BroadcastChannel não suportado neste navegador');
     bc = null;
   }
 }
 
-// Try to dynamically load firebase integration if available
-async function initFirebaseIfAvailable(): Promise<boolean> {
-  if (firebaseAvailable) return true;
+// Inicializa Firebase (sincronização global cross-origin)
+function initFirebaseSync(): boolean {
+  if (firebaseDb) return true;
+  
   try {
-    // dynamic import to avoid build errors when module not present
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    const fb = require('../api/firebase');
-    if (fb && typeof fb.initFirebase === 'function' && fb.initFirebase()) {
-      const { getDatabase } = require('firebase/database');
-      const db = getDatabase();
-      firebaseAvailable = true;
+    if (isFirebaseEnabled() && initFirebase()) {
+      firebaseDb = getDatabase();
+      console.log('🔥 Firebase inicializado (sync global cross-origin)');
       return true;
     }
   } catch (e) {
-    // firebase not configured, ignore
+    console.warn('⚠️ Firebase não configurado ou erro:', e);
   }
+  
   return false;
 }
 
+/**
+ * Envia estado do player para todos os listeners (local + global)
+ */
 export async function sendPlayerState(state: PlayerSyncState): Promise<boolean> {
-  // send via BroadcastChannel
+  // 1. Envia via BroadcastChannel (sincronização local - mesma origem)
   if (!bc) initBroadcastChannel();
   try {
     bc?.postMessage(state);
-  } catch (e) {}
-
-  // try firebase if available
-  try {
-    const ok = await initFirebaseIfAvailable();
-    if (ok) {
-      const { getDatabase, ref, set } = require('firebase/database');
-      const db = getDatabase();
-      const playerRef = ref(db, 'playerSync');
-      await set(playerRef, { ...state, timestamp: Date.now() });
-    }
   } catch (e) {
-    // ignore firebase errors
+    console.warn('Erro ao enviar via BroadcastChannel:', e);
+  }
+
+  // 2. Envia via Firebase (sincronização global - cross-origin)
+  if (initFirebaseSync()) {
+    try {
+      const playerRef = ref(firebaseDb, 'playerSync');
+      await set(playerRef, { ...state, timestamp: Date.now() });
+    } catch (e) {
+      console.warn('Erro ao enviar via Firebase:', e);
+    }
   }
 
   return true;
 }
 
+/**
+ * Escuta mudanças de estado do player (local + global)
+ */
 export function listenToPlayerState(callback: (state: PlayerSyncState | null) => void): () => void {
-  // BroadcastChannel listener
+  // 1. Listener BroadcastChannel (local)
   if (!bc) initBroadcastChannel();
+  
   const bcHandler = (ev: MessageEvent) => {
     try {
       const data = ev.data as PlayerSyncState;
       callback(data || null);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Erro ao processar mensagem BroadcastChannel:', e);
+    }
   };
 
   if (bc) bc.addEventListener('message', bcHandler);
 
-  // Firebase listener (optional)
+  // 2. Listener Firebase (global)
   let fbOff: (() => void) | null = null;
-  initFirebaseIfAvailable().then((ok) => {
-    if (!ok) return;
+  
+  if (initFirebaseSync()) {
     try {
-      const { getDatabase, ref, onValue, off } = require('firebase/database');
-      const db = getDatabase();
-      const playerRef = ref(db, 'playerSync');
+      const playerRef = ref(firebaseDb, 'playerSync');
+      
       const listener = (snapshot: any) => {
         const state = snapshot.val();
         callback(state || null);
       };
+      
       onValue(playerRef, listener);
-      fbOff = () => off(playerRef);
-    } catch (e) {}
-  });
+      
+      fbOff = () => {
+        off(playerRef);
+      };
+    } catch (e) {
+      console.warn('Erro ao escutar Firebase:', e);
+    }
+  }
 
+  // Retorna função para cancelar todos os listeners
   return () => {
     if (bc) bc.removeEventListener('message', bcHandler);
     if (fbOff) fbOff();
