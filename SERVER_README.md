@@ -63,11 +63,13 @@ Você verá algo assim:
 ## 🌐 API Endpoints
 
 ### Listar Vídeos
+
 ```
 GET http://SEU_IP:3002/api/videos
 ```
 
 Retorna JSON:
+
 ```json
 [
   {
@@ -82,6 +84,7 @@ Retorna JSON:
 ```
 
 ### Acessar Vídeo
+
 ```
 GET http://SEU_IP:3002/videos/NOME_DO_ARQUIVO.mp4
 ```
@@ -111,17 +114,20 @@ GET http://SEU_IP:3002/videos/NOME_DO_ARQUIVO.mp4
 Se quiser acessar de QUALQUER lugar (não só na sua rede), use:
 
 ### Opção 1: ngrok (Túnel Temporário - Grátis)
+
 ```bash
 # Instalar ngrok: https://ngrok.com/download
 ngrok http 3002
 ```
 
 Você receberá uma URL pública:
+
 ```
 https://abc123.ngrok.io → http://localhost:3002
 ```
 
 ### Opção 2: Cloudflare Tunnel (Permanente - Grátis)
+
 ```bash
 # Instalar cloudflared
 npm install -g cloudflared
@@ -135,15 +141,19 @@ cloudflared tunnel --url http://localhost:3002
 ## 🛠️ Solução de Problemas
 
 ### Porta 3002 já está em uso?
+
 Edite `server.js` e mude a porta:
+
 ```javascript
 const PORT = 3003; // ou qualquer porta livre
 ```
 
 ### Firewall bloqueando?
+
 Adicione exceção no firewall do Windows para a porta 3002.
 
 ### Não aparece o IP?
+
 Certifique-se de estar conectado na WiFi (não cabo ethernet).
 
 ---
