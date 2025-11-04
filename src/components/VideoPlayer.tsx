@@ -4,6 +4,7 @@ import type { VideoSource, PlayerConfig } from '../types';
 import { buildMovieUrl, buildTvUrl, buildEpisodeUrl } from '../utils/vidsrc';
 import { detectVideoType, getYouTubeEmbedUrl } from '../utils/videoDetector';
 import { listenToPlayerState, sendPlayerState } from '../utils/playerSync';
+import { loadVideoBlob } from '../utils/indexedDB';
 
 type VideoPlayerProps = {
   config: PlayerConfig;
@@ -17,6 +18,32 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
   const videoRef = useRef<HTMLVideoElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [uploadVideoUrl, setUploadVideoUrl] = useState<string | null>(null);
+  
+  // Carrega vídeo do IndexedDB quando necessário
+  useEffect(() => {
+    if (currentVideo?.type === 'upload' && currentVideo.url.startsWith('indexeddb://')) {
+      const videoId = currentVideo.url.replace('indexeddb://', '');
+      
+      loadVideoBlob(videoId).then((blobUrl) => {
+        if (blobUrl) {
+          setUploadVideoUrl(blobUrl);
+        } else {
+          console.error('❌ Falha ao carregar vídeo do IndexedDB:', videoId);
+        }
+      });
+      
+      // Cleanup: revoga Blob URL quando componente desmonta ou vídeo muda
+      return () => {
+        if (uploadVideoUrl) {
+          URL.revokeObjectURL(uploadVideoUrl);
+          setUploadVideoUrl(null);
+        }
+      };
+    } else {
+      setUploadVideoUrl(null);
+    }
+  }, [currentVideo]);
   
   useEffect(() => {
     // Suporta vídeos diretos E uploads (ambos usam tag <video>)
@@ -224,13 +251,26 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
     );
   }
   
-  // MODO UPLOAD (vídeos enviados pelo usuário - Base64 ou Blob URL)
+  // MODO UPLOAD (vídeos enviados pelo usuário - IndexedDB)
   if (currentVideo.type === 'upload') {
+    // Se ainda está carregando do IndexedDB
+    if (!uploadVideoUrl && currentVideo.url.startsWith('indexeddb://')) {
+      return (
+        <div className="w-full h-full flex items-center justify-center bg-black">
+          <div className="text-center">
+            <div className="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <p className="text-white text-lg font-semibold">Carregando vídeo...</p>
+            <p className="text-slate-400 text-sm mt-2">Buscando do armazenamento local</p>
+          </div>
+        </div>
+      );
+    }
+    
     return (
       <video
         ref={videoRef}
         key={currentVideo.id}
-        src={currentVideo.url}
+        src={uploadVideoUrl || currentVideo.url}
         autoPlay={config.autoplay}
         muted={config.muted}
         loop={false}

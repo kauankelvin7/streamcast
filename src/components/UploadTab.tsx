@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
-import { IconUpload, IconVideo, IconX, IconPlayerPlay, IconFile } from '@tabler/icons-react';
+import { IconUpload, IconVideo, IconX, IconPlayerPlay, IconFile, IconDatabase } from '@tabler/icons-react';
 import type { VideoSource } from '../types';
+import { saveVideoBlob, hasEnoughSpace, getStorageUsage } from '../utils/indexedDB';
 
 type UploadTabProps = {
   onUploadComplete: (video: VideoSource) => void; // adiciona ao armazenamento de uploads
@@ -12,7 +13,13 @@ type UploadTabProps = {
 export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, onRemoveUpload }: UploadTabProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [storageInfo, setStorageInfo] = useState({ used: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Atualiza info de armazenamento ao montar
+  useState(() => {
+    getStorageUsage().then(setStorageInfo);
+  });
 
   const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
@@ -43,10 +50,13 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       return;
     }
 
-    // Verificar tamanho (máximo 100MB para evitar problemas de memória)
-    const maxSize = 100 * 1024 * 1024; // 100MB
-    if (file.size > maxSize) {
-      alert('Arquivo muito grande! Tamanho máximo: 100MB\n\nPara vídeos maiores, use um serviço de hospedagem de vídeos.');
+    // Verificar espaço disponível
+    const hasSpace = await hasEnoughSpace(file.size);
+    if (!hasSpace) {
+      const { used, total } = await getStorageUsage();
+      const usedGB = (used / 1024 / 1024 / 1024).toFixed(2);
+      const totalGB = (total / 1024 / 1024 / 1024).toFixed(2);
+      alert(`❌ Espaço insuficiente!\n\nUsado: ${usedGB} GB / ${totalGB} GB\n\nLibere espaço removendo vídeos antigos.`);
       return;
     }
 
@@ -54,22 +64,23 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
     setUploadProgress(0);
 
     try {
+      const videoId = `upload-${Date.now()}`;
+      
       // Criar URL temporária APENAS para extrair metadados
       const tempUrl = URL.createObjectURL(file);
+      setUploadProgress(10);
 
       // Criar elemento de vídeo para extrair metadados
       const video = document.createElement('video');
       video.preload = 'metadata';
 
       await new Promise<void>((resolve, reject) => {
-        video.onloadedmetadata = () => {
-          resolve();
-        };
-        video.onerror = () => {
-          reject(new Error('Erro ao carregar metadados do vídeo'));
-        };
+        video.onloadedmetadata = () => resolve();
+        video.onerror = () => reject(new Error('Erro ao carregar metadados do vídeo'));
         video.src = tempUrl;
       });
+
+      setUploadProgress(30);
 
       // Gerar thumbnail
       video.currentTime = Math.min(5, video.duration / 2);
@@ -87,34 +98,22 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       // Liberar URL temporária
       URL.revokeObjectURL(tempUrl);
 
-      // Converter arquivo para Base64 (para persistência)
-      setUploadProgress(20);
-      const reader = new FileReader();
+      setUploadProgress(50);
+
+      // Salvar arquivo no IndexedDB (suporta GB!)
+      const saved = await saveVideoBlob(videoId, file);
       
-      const videoBase64 = await new Promise<string>((resolve, reject) => {
-        reader.onload = (e) => {
-          const result = e.target?.result as string;
-          resolve(result);
-        };
-        reader.onerror = () => {
-          reject(new Error('Erro ao ler o arquivo'));
-        };
-        reader.onprogress = (e) => {
-          if (e.lengthComputable) {
-            const progress = 20 + Math.round((e.loaded / e.total) * 80);
-            setUploadProgress(progress);
-          }
-        };
-        reader.readAsDataURL(file);
-      });
+      if (!saved) {
+        throw new Error('Falha ao salvar vídeo no armazenamento');
+      }
 
-      setUploadProgress(100);
+      setUploadProgress(90);
 
-      // Criar objeto de vídeo com Base64
+      // Criar objeto de vídeo (URL será gerada ao reproduzir)
       const newVideo: VideoSource = {
-        id: `upload-${Date.now()}`,
+        id: videoId,
         title: file.name.replace(/\.[^/.]+$/, ''), // Remove extensão
-        url: videoBase64, // Base64 Data URL
+        url: `indexeddb://${videoId}`, // Marcador especial para IndexedDB
         type: 'upload',
         fileName: file.name,
         fileSize: file.size,
@@ -123,7 +122,11 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
         addedAt: new Date().toISOString()
       };
 
+      setUploadProgress(100);
       onUploadComplete(newVideo);
+      
+      // Atualizar info de armazenamento
+      getStorageUsage().then(setStorageInfo);
       
       // Resetar input
       if (fileInputRef.current) {
@@ -196,17 +199,38 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
         </label>
 
         <div className="mt-4 space-y-3">
-          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
-            <p className="text-blue-300 text-xs">
-              ℹ️ <strong>Como funciona:</strong> Os vídeos são convertidos para Base64 e armazenados no navegador (localStorage).
-              Isso permite que funcionem em qualquer lugar, incluindo embeds em outros sites!
+          {/* Info de armazenamento */}
+          {storageInfo.total > 0 && (
+            <div className="bg-slate-800/50 border border-slate-600 rounded-lg p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <IconDatabase className="w-4 h-4 text-blue-400" />
+                  <span className="text-slate-300 text-xs font-semibold">Armazenamento IndexedDB</span>
+                </div>
+                <span className="text-slate-400 text-xs">
+                  {(storageInfo.used / 1024 / 1024 / 1024).toFixed(2)} GB / {(storageInfo.total / 1024 / 1024 / 1024).toFixed(2)} GB
+                </span>
+              </div>
+              <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-300"
+                  style={{ width: `${(storageInfo.used / storageInfo.total) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
+          
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
+            <p className="text-green-300 text-xs">
+              ✅ <strong>IndexedDB ativado!</strong> Suporta vídeos de <strong>vários GB</strong> (filmes completos).
+              Os arquivos ficam armazenados no navegador e funcionam offline!
             </p>
           </div>
           
-          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-            <p className="text-yellow-300 text-xs">
-              ⚠️ <strong>Limitações:</strong> Tamanho máximo de 100MB por vídeo. Para vídeos maiores ou melhor performance,
-              recomendamos hospedar em um servidor ou usar serviços como YouTube, Vimeo, etc.
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+            <p className="text-blue-300 text-xs">
+              💡 <strong>Dica:</strong> Os vídeos são armazenados localmente no seu dispositivo.
+              Para compartilhar em outros dispositivos/sites, os arquivos precisam estar no IndexedDB de cada navegador.
             </p>
           </div>
         </div>

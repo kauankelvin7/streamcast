@@ -7,6 +7,7 @@ import SearchTab from './SearchTab';
 import UploadTab from './UploadTab';
 import { DAYS } from '../utils/schedule';
 import { getTMDBPosterUrl } from '../api/tmdb';
+import { deleteVideoBlob } from '../utils/indexedDB';
 
 type AdminPanelProps = {
   config: PlayerConfig;
@@ -64,7 +65,15 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
     // Optionally auto-add to playlist
   };
 
-  const handleRemoveUpload = (id: string) => {
+  const handleRemoveUpload = async (id: string) => {
+    const upload = uploads.find(u => u.id === id);
+    
+    // Remove do IndexedDB se for um vídeo armazenado lá
+    if (upload && upload.url.startsWith('indexeddb://')) {
+      const videoId = upload.url.replace('indexeddb://', '');
+      await deleteVideoBlob(videoId);
+    }
+    
     const next = uploads.filter(u => u.id !== id);
     setUploads(next);
     persistUploads(next);
