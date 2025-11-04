@@ -13,6 +13,7 @@ type UploadTabProps = {
 export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, onRemoveUpload }: UploadTabProps) {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState('');
   const [storageInfo, setStorageInfo] = useState({ used: 0, total: 0 });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -62,11 +63,13 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
 
     setUploading(true);
     setUploadProgress(0);
+    setUploadStatus('Verificando arquivo...');
 
     try {
       const videoId = `upload-${Date.now()}`;
       
       // Criar URL temporária APENAS para extrair metadados
+      setUploadStatus('Lendo metadados do vídeo...');
       const tempUrl = URL.createObjectURL(file);
       setUploadProgress(10);
 
@@ -81,6 +84,7 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       });
 
       setUploadProgress(30);
+      setUploadStatus('Gerando thumbnail...');
 
       // Gerar thumbnail
       video.currentTime = Math.min(5, video.duration / 2);
@@ -98,16 +102,27 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       // Liberar URL temporária
       URL.revokeObjectURL(tempUrl);
 
-      setUploadProgress(50);
+      setUploadProgress(40);
+      setUploadStatus(`Salvando ${(file.size / 1024 / 1024).toFixed(1)} MB no armazenamento...`);
 
       // Salvar arquivo no IndexedDB (suporta GB!)
-      const saved = await saveVideoBlob(videoId, file);
+      // Progress: 40% -> 95%
+      const saved = await saveVideoBlob(videoId, file, (progress) => {
+        // Mapeia 0-100 do IndexedDB para 40-95 da UI
+        const uiProgress = 40 + (progress * 0.55);
+        setUploadProgress(Math.round(uiProgress));
+        
+        if (progress > 0) {
+          setUploadStatus(`Salvando no IndexedDB... ${progress}%`);
+        }
+      });
       
       if (!saved) {
         throw new Error('Falha ao salvar vídeo no armazenamento');
       }
 
-      setUploadProgress(90);
+      setUploadProgress(100);
+      setUploadStatus('Concluído!');
 
       // Criar objeto de vídeo (URL será gerada ao reproduzir)
       const newVideo: VideoSource = {
@@ -139,6 +154,7 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
     } finally {
       setUploading(false);
       setUploadProgress(0);
+      setUploadStatus('');
     }
   };
 
@@ -179,6 +195,7 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
           {uploading ? (
             <div className="space-y-3">
               <p className="text-white font-semibold text-lg">Processando vídeo...</p>
+              <p className="text-blue-300 text-sm">{uploadStatus}</p>
               <div className="max-w-xs mx-auto">
                 <div className="w-full h-2 bg-slate-700 rounded-full overflow-hidden">
                   <div

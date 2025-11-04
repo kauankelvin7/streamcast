@@ -43,10 +43,32 @@ function openDB(): Promise<IDBDatabase> {
 
 /**
  * Salva vídeo no IndexedDB (suporta arquivos GRANDES - GB)
+ * @param onProgress Callback opcional para reportar progresso (0-100)
  */
-export async function saveVideoBlob(id: string, file: File): Promise<boolean> {
+export async function saveVideoBlob(
+  id: string, 
+  file: File,
+  onProgress?: (progress: number) => void
+): Promise<boolean> {
   try {
     const db = await openDB();
+    
+    // Simula progresso durante a operação (IndexedDB não tem progresso nativo)
+    let progressInterval: NodeJS.Timeout | null = null;
+    let currentProgress = 0;
+    
+    if (onProgress) {
+      // Simula progresso gradual baseado no tamanho do arquivo
+      const fileSizeMB = file.size / 1024 / 1024;
+      const estimatedSeconds = Math.min(30, Math.max(5, fileSizeMB / 100)); // 5-30s
+      const steps = 100;
+      const intervalMs = (estimatedSeconds * 1000) / steps;
+      
+      progressInterval = setInterval(() => {
+        currentProgress = Math.min(95, currentProgress + 1);
+        onProgress(currentProgress);
+      }, intervalMs);
+    }
     
     const videoBlob: VideoBlob = {
       id,
@@ -63,11 +85,15 @@ export async function saveVideoBlob(id: string, file: File): Promise<boolean> {
       const request = store.put(videoBlob);
 
       request.onsuccess = () => {
+        if (progressInterval) clearInterval(progressInterval);
+        if (onProgress) onProgress(100);
+        
         console.log(`✅ Vídeo ${file.name} salvo no IndexedDB (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
         resolve(true);
       };
 
       request.onerror = () => {
+        if (progressInterval) clearInterval(progressInterval);
         console.error('Erro ao salvar vídeo:', request.error);
         reject(false);
       };
