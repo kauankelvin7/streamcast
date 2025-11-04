@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import type React from 'react';
-import { IconX, IconCopy, IconSettings2, IconDeviceFloppy, IconListDetails, IconClockHour4, IconTags } from '@tabler/icons-react';
+import { IconX, IconCopy, IconSettings2, IconDeviceFloppy, IconListDetails, IconClockHour4, IconTags, IconUpload } from '@tabler/icons-react';
 import type { VideoSource, PlayerConfig, ScheduleItem } from '../types';
 import { GENRE_TAGS } from '../types';
 import SearchTab from './SearchTab';
+import UploadTab from './UploadTab';
 import { DAYS } from '../utils/schedule';
 import { getTMDBPosterUrl } from '../api/tmdb';
 
@@ -16,11 +17,12 @@ type AdminPanelProps = {
 };
 
 export default function AdminPanel({ config: initialConfig, playlist: initialPlaylist, schedules: initialSchedules, onClose, onSave }: AdminPanelProps) {
-  const [activeTab, setActiveTab] = useState<'search' | 'playlist' | 'schedule' | 'settings'>('search');
+  const [activeTab, setActiveTab] = useState<'search' | 'upload' | 'playlist' | 'schedule' | 'settings'>('search');
   const [config, setConfig] = useState(initialConfig);
   const [playlist, setPlaylist] = useState(initialPlaylist);
   const [schedules, setSchedules] = useState(initialSchedules);
   const [showEmbedModal, setShowEmbedModal] = useState(false);
+  const [uploads, setUploads] = useState<VideoSource[]>([]);
   
   const [scheduleName, setScheduleName] = useState('');
   const [scheduleVideoId, setScheduleVideoId] = useState('');
@@ -39,6 +41,33 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
   const handleAddVideo = (video: VideoSource) => {
     setPlaylist([...playlist, video]);
     setActiveTab('playlist');
+  };
+
+  // Uploads handlers (persist in localStorage)
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('streamcast_uploads');
+      if (raw) setUploads(JSON.parse(raw));
+    } catch (e) {}
+  }, []);
+
+  const persistUploads = (list: VideoSource[]) => {
+    try {
+      localStorage.setItem('streamcast_uploads', JSON.stringify(list));
+    } catch (e) {}
+  };
+
+  const handleAddUpload = (video: VideoSource) => {
+    const next = [...uploads, video];
+    setUploads(next);
+    persistUploads(next);
+    // Optionally auto-add to playlist
+  };
+
+  const handleRemoveUpload = (id: string) => {
+    const next = uploads.filter(u => u.id !== id);
+    setUploads(next);
+    persistUploads(next);
   };
 
   const handleRemoveVideo = (id: string) => {
@@ -149,11 +178,12 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
   };
 
   // Improved a11y/keyboard support for the top navigation
-  const tabs: { id: 'search' | 'playlist' | 'schedule' | 'settings'; label: string; icon: any }[] = [
-  { id: 'search', label: 'Search', icon: IconCopy },
+  const tabs: { id: 'search' | 'upload' | 'playlist' | 'schedule' | 'settings'; label: string; icon: any }[] = [
+  { id: 'search', label: 'Buscar', icon: IconCopy },
+  { id: 'upload', label: 'Uploads', icon: IconUpload },
   { id: 'playlist', label: 'Playlist', icon: IconListDetails },
-  { id: 'schedule', label: 'Schedule', icon: IconClockHour4 },
-  { id: 'settings', label: 'Settings', icon: IconSettings2 }
+  { id: 'schedule', label: 'Agenda', icon: IconClockHour4 },
+  { id: 'settings', label: 'Configurações', icon: IconSettings2 }
   ];
 
   const handleTabsKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
@@ -276,6 +306,10 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
             
             {activeTab === 'search' && (
               <SearchTab onAddVideo={handleAddVideo} />
+            )}
+
+            {activeTab === 'upload' && (
+              <UploadTab onUploadComplete={handleAddUpload} onAddToPlaylist={handleAddVideo} uploads={uploads} onRemoveUpload={handleRemoveUpload} />
             )}
 
             {activeTab === 'playlist' && (

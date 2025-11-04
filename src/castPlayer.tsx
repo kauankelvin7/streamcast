@@ -105,6 +105,8 @@ export default function CastPlayerApp() {
           config={config} 
           currentVideo={currentVideo}
           onVideoEnd={handleVideoEnd}
+          enableSync={true}
+          isController={showAdmin}
         />
       </div>
       

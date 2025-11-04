@@ -2,7 +2,7 @@ export type VideoSource = {
   id: string;
   title: string;
   url: string;
-  type: 'direct' | 'movie' | 'tv' | 'episode';
+  type: 'direct' | 'movie' | 'tv' | 'episode' | 'upload';
   imdb?: string;
   tmdb?: string;
   season?: number;
@@ -10,6 +10,11 @@ export type VideoSource = {
   posterPath?: string;
   addedAt: string;
   tags?: string[];
+  // Para vídeos enviados
+  fileName?: string;
+  fileSize?: number;
+  duration?: number;
+  thumbnail?: string;
 };
 
 export const GENRE_TAGS = [
@@ -44,6 +49,15 @@ export type PlayerConfig = {
   isPlaying?: boolean;
   currentTime?: number;
   lastSyncTime?: number;
+  syncEnabled?: boolean; // Ativar/desativar sincronização
+};
+
+// Evento de sincronização para broadcast
+export type SyncEvent = {
+  type: 'play' | 'pause' | 'seek';
+  videoId: string;
+  currentTime: number;
+  timestamp: number;
 };
 
 // Tipos mínimos para resultados do TMDB usados na UI
