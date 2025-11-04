@@ -19,7 +19,8 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
   const [isSyncing, setIsSyncing] = useState(false);
   
   useEffect(() => {
-    if (videoRef.current && currentVideo?.type === 'direct') {
+    // Suporta vídeos diretos E uploads (ambos usam tag <video>)
+    if (videoRef.current && (currentVideo?.type === 'direct' || currentVideo?.type === 'upload')) {
       const video = videoRef.current;
       video.muted = config.muted;
       
@@ -220,6 +221,22 @@ export default function VideoPlayer({ config, currentVideo, onVideoEnd, enableSy
           <p className="text-gray-600 text-sm mt-2">Configure sua playlist no painel Admin</p>
         </div>
       </div>
+    );
+  }
+  
+  // MODO UPLOAD (vídeos enviados pelo usuário - Base64 ou Blob URL)
+  if (currentVideo.type === 'upload') {
+    return (
+      <video
+        ref={videoRef}
+        key={currentVideo.id}
+        src={currentVideo.url}
+        autoPlay={config.autoplay}
+        muted={config.muted}
+        loop={false}
+        controls
+        className="w-full h-full object-contain bg-black"
+      />
     );
   }
   

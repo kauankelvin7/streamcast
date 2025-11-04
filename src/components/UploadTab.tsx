@@ -43,12 +43,19 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       return;
     }
 
+    // Verificar tamanho (máximo 100MB para evitar problemas de memória)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      alert('Arquivo muito grande! Tamanho máximo: 100MB\n\nPara vídeos maiores, use um serviço de hospedagem de vídeos.');
+      return;
+    }
+
     setUploading(true);
     setUploadProgress(0);
 
     try {
-      // Criar URL temporária do arquivo
-      const videoUrl = URL.createObjectURL(file);
+      // Criar URL temporária APENAS para extrair metadados
+      const tempUrl = URL.createObjectURL(file);
 
       // Criar elemento de vídeo para extrair metadados
       const video = document.createElement('video');
@@ -61,11 +68,11 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
         video.onerror = () => {
           reject(new Error('Erro ao carregar metadados do vídeo'));
         };
-        video.src = videoUrl;
+        video.src = tempUrl;
       });
 
       // Gerar thumbnail
-      video.currentTime = Math.min(5, video.duration / 2); // 5s ou metade do vídeo
+      video.currentTime = Math.min(5, video.duration / 2);
       await new Promise(resolve => {
         video.onseeked = resolve;
       });
@@ -77,17 +84,37 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       ctx?.drawImage(video, 0, 0, canvas.width, canvas.height);
       const thumbnail = canvas.toDataURL('image/jpeg', 0.7);
 
-      // Simular progresso de upload
-      for (let i = 0; i <= 100; i += 10) {
-        setUploadProgress(i);
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // Liberar URL temporária
+      URL.revokeObjectURL(tempUrl);
 
-      // Criar objeto de vídeo
+      // Converter arquivo para Base64 (para persistência)
+      setUploadProgress(20);
+      const reader = new FileReader();
+      
+      const videoBase64 = await new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          resolve(result);
+        };
+        reader.onerror = () => {
+          reject(new Error('Erro ao ler o arquivo'));
+        };
+        reader.onprogress = (e) => {
+          if (e.lengthComputable) {
+            const progress = 20 + Math.round((e.loaded / e.total) * 80);
+            setUploadProgress(progress);
+          }
+        };
+        reader.readAsDataURL(file);
+      });
+
+      setUploadProgress(100);
+
+      // Criar objeto de vídeo com Base64
       const newVideo: VideoSource = {
         id: `upload-${Date.now()}`,
         title: file.name.replace(/\.[^/.]+$/, ''), // Remove extensão
-        url: videoUrl,
+        url: videoBase64, // Base64 Data URL
         type: 'upload',
         fileName: file.name,
         fileSize: file.size,
@@ -96,7 +123,7 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
         addedAt: new Date().toISOString()
       };
 
-  onUploadComplete(newVideo);
+      onUploadComplete(newVideo);
       
       // Resetar input
       if (fileInputRef.current) {
@@ -168,11 +195,20 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
           )}
         </label>
 
-        <div className="mt-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
-          <p className="text-yellow-300 text-xs">
-            ⚠️ <strong>Nota:</strong> Os vídeos enviados são armazenados localmente no navegador. 
-            Para compartilhar com outros usuários, você precisará hospedar os arquivos em um servidor.
-          </p>
+        <div className="mt-4 space-y-3">
+          <div className="bg-blue-500/10 border border-blue-500/30 rounded-lg p-3">
+            <p className="text-blue-300 text-xs">
+              ℹ️ <strong>Como funciona:</strong> Os vídeos são convertidos para Base64 e armazenados no navegador (localStorage).
+              Isso permite que funcionem em qualquer lugar, incluindo embeds em outros sites!
+            </p>
+          </div>
+          
+          <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+            <p className="text-yellow-300 text-xs">
+              ⚠️ <strong>Limitações:</strong> Tamanho máximo de 100MB por vídeo. Para vídeos maiores ou melhor performance,
+              recomendamos hospedar em um servidor ou usar serviços como YouTube, Vimeo, etc.
+            </p>
+          </div>
         </div>
       </div>
 
