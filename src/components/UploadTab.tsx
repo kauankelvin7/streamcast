@@ -161,10 +161,10 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
   return (
     <div className="space-y-6">
       {/* Upload Area */}
-      <div className="bg-secondary/20 rounded-xl p-6 border border-primary/20">
+      <div className="bg-gray-800/20 rounded-xl p-6 border border-gray-600/20">
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 bg-accent/10 border border-accent/30 rounded-lg flex items-center justify-center">
-            <IconUpload className="w-5 h-5 text-accent" />
+          <div className="w-10 h-10 bg-gray-700/10 border border-gray-600/30 rounded-lg flex items-center justify-center">
+            <IconUpload className="w-5 h-5 text-gray-400" />
           </div>
           <div>
             <h3 className="text-white font-bold text-lg">Enviar Vídeos</h3>
@@ -186,20 +186,20 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
           htmlFor="video-upload"
           className={`block border-2 border-dashed rounded-xl p-12 text-center transition-all cursor-pointer ${
             uploading
-              ? 'border-primary/50 bg-primary/5 cursor-not-allowed'
-              : 'border-primary/20 hover:border-accent/50 hover:bg-secondary/30'
+              ? 'border-gray-600/50 bg-gray-600/5 cursor-not-allowed'
+              : 'border-gray-600/20 hover:border-gray-500/50 hover:bg-gray-800/30'
           }`}
         >
-          <IconVideo className={`w-16 h-16 mx-auto mb-4 ${uploading ? 'text-primary animate-pulse' : 'text-text-secondary/50'}`} />
+          <IconVideo className={`w-16 h-16 mx-auto mb-4 ${uploading ? 'text-gray-400' : 'text-text-secondary/50'}`} />
           
           {uploading ? (
             <div className="space-y-3">
               <p className="text-white font-semibold text-lg">Processando vídeo...</p>
-              <p className="text-primary text-sm">{uploadStatus}</p>
+              <p className="text-gray-300 text-sm">{uploadStatus}</p>
               <div className="max-w-xs mx-auto">
-                <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
+                <div className="w-full h-2 bg-gray-800/50 rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
+                    className="h-full bg-gray-600 transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -218,35 +218,35 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
         <div className="mt-4 space-y-3">
           {/* Info de armazenamento */}
           {storageInfo.total > 0 && (
-            <div className="bg-secondary/30 border border-primary/10 rounded-lg p-3">
+            <div className="bg-gray-800/30 border border-gray-600/10 rounded-lg p-3">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
-                  <IconDatabase className="w-4 h-4 text-primary" />
+                  <IconDatabase className="w-4 h-4 text-gray-400" />
                   <span className="text-text-secondary text-xs font-semibold">Armazenamento IndexedDB</span>
                 </div>
                 <span className="text-text-secondary/70 text-xs">
                   {(storageInfo.used / 1024 / 1024 / 1024).toFixed(2)} GB / {(storageInfo.total / 1024 / 1024 / 1024).toFixed(2)} GB
                 </span>
               </div>
-              <div className="w-full h-2 bg-secondary/50 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-gray-800/50 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-300"
+                  className="h-full bg-gray-600 transition-all duration-300"
                   style={{ width: `${(storageInfo.used / storageInfo.total) * 100}%` }}
                 />
               </div>
             </div>
           )}
           
-          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
-            <p className="text-green-300 text-xs">
-              ✅ <strong>IndexedDB ativado!</strong> Suporta vídeos de <strong>vários GB</strong> (filmes completos).
+          <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+            <p className="text-gray-300 text-xs">
+              IndexedDB ativado! Suporta vídeos de vários GB (filmes completos).
               Os arquivos ficam armazenados no navegador e funcionam offline!
             </p>
           </div>
           
-          <div className="bg-primary/10 border border-primary/30 rounded-lg p-3">
-            <p className="text-primary text-xs">
-              💡 <strong>Dica:</strong> Os vídeos são armazenados localmente no seu dispositivo.
+          <div className="bg-gray-500/10 border border-gray-500/30 rounded-lg p-3">
+            <p className="text-gray-300 text-xs">
+              Os vídeos são armazenados localmente no seu dispositivo.
               Para compartilhar em outros dispositivos/sites, os arquivos precisam estar no IndexedDB de cada navegador.
             </p>
           </div>
@@ -254,17 +254,17 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
       </div>
 
       {/* Uploads List */}
-      <div className="bg-secondary/20 rounded-xl p-6 border border-primary/20">
+      <div className="bg-gray-800/20 rounded-xl p-6 border border-gray-600/20">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-xl font-bold text-white">Vídeos Enviados</h3>
-          <span className="px-3 py-1.5 bg-accent/10 border border-accent/30 text-accent text-sm font-semibold rounded-lg">
+          <span className="px-3 py-1.5 bg-gray-700/10 border border-gray-600/30 text-gray-300 text-sm font-semibold rounded-lg">
             {uploads.length} {uploads.length === 1 ? 'Vídeo' : 'Vídeos'}
           </span>
         </div>
 
         {uploads.length === 0 ? (
-          <div className="border-2 border-dashed border-accent/20 bg-secondary/20 rounded-xl p-12 text-center">
-            <IconFile className="w-16 h-16 text-accent/30 mx-auto mb-4" />
+          <div className="border-2 border-dashed border-gray-600/20 bg-gray-800/20 rounded-xl p-12 text-center">
+            <IconFile className="w-16 h-16 text-gray-600/30 mx-auto mb-4" />
             <p className="text-white font-bold text-lg mb-2">Nenhum vídeo enviado</p>
             <p className="text-text-secondary text-sm">Faça upload de seus vídeos acima</p>
           </div>
@@ -273,7 +273,7 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
             {uploads.map((video) => (
               <div
                 key={video.id}
-                className="group bg-secondary/30 hover:bg-secondary/50 border border-primary/10 hover:border-accent/50 rounded-xl p-4 transition-all duration-200"
+                className="group bg-gray-800/30 hover:bg-gray-800/50 border border-gray-600/10 hover:border-gray-500/50 rounded-xl p-4 transition-all duration-200"
               >
                 <div className="flex items-center gap-4">
                   {/* Thumbnail */}
@@ -281,10 +281,10 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
                     <img
                       src={video.thumbnail}
                       alt={video.title}
-                      className="w-20 h-14 object-cover rounded-lg border border-primary/20"
+                      className="w-20 h-14 object-cover rounded-lg border border-gray-600/20"
                     />
                   ) : (
-                    <div className="w-20 h-14 bg-secondary/50 border border-primary/20 rounded-lg flex items-center justify-center">
+                    <div className="w-20 h-14 bg-gray-800/50 border border-gray-600/20 rounded-lg flex items-center justify-center">
                       <IconVideo className="w-6 h-6 text-text-secondary/50" />
                     </div>
                   )}
@@ -293,12 +293,12 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
                   <div className="flex-1 min-w-0">
                     <p className="text-white font-semibold text-sm truncate mb-1">{video.title}</p>
                     <div className="flex items-center gap-3 text-xs flex-wrap">
-                      <span className="px-2 py-0.5 bg-accent/10 border border-accent/30 text-accent rounded text-xs font-medium">
+                      <span className="px-2 py-0.5 bg-gray-700/10 border border-gray-600/30 text-gray-300 rounded text-xs font-medium">
                         UPLOAD
                       </span>
                       {video.duration && (
-                        <span className="text-cyan-400 font-mono">
-                          ⏱️ {formatDuration(video.duration)}
+                        <span className="text-gray-400 font-mono">
+                          {formatDuration(video.duration)}
                         </span>
                       )}
                       {video.fileSize && (
@@ -317,14 +317,14 @@ export default function UploadTab({ onUploadComplete, onAddToPlaylist, uploads, 
                         const playlistVideo = { ...video, id: `playlist-${Date.now()}` };
                         onAddToPlaylist(playlistVideo);
                       }}
-                      className="p-2 bg-green-500/10 border border-green-500/30 text-green-300 hover:bg-green-500/20 rounded-lg transition-all duration-200"
+                      className="p-2 bg-gray-500/10 border border-gray-500/30 text-gray-300 hover:bg-gray-500/20 rounded-lg"
                       title="Adicionar à Playlist"
                     >
                       <IconPlayerPlay className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => onRemoveUpload(video.id)}
-                      className="p-2 bg-red-500/10 border border-red-500/30 text-red-300 hover:bg-red-500/20 rounded-lg transition-all duration-200"
+                      className="p-2 bg-gray-500/10 border border-gray-500/30 text-gray-300 hover:bg-gray-500/20 rounded-lg"
                       title="Remover"
                     >
                       <IconX className="w-5 h-5" />

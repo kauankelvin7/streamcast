@@ -261,10 +261,10 @@ A busca real será implementada em breve.`;
       <div className="w-full h-full flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="relative w-24 h-24 mx-auto mb-6">
-            <div className="absolute inset-0 bg-primary/20 rounded-full animate-pulse"></div>
-            <div className="absolute inset-2 bg-primary/30 rounded-full animate-pulse animation-delay-2000"></div>
+            <div className="absolute inset-0 bg-gray-500/20 rounded-full"></div>
+            <div className="absolute inset-2 bg-gray-500/30 rounded-full"></div>
             <div className="absolute inset-0 flex items-center justify-center">
-              <IconMovie className="w-12 h-12 text-primary opacity-75" />
+              <IconMovie className="w-12 h-12 text-gray-400 opacity-75" />
             </div>
           </div>
           <p className="text-text-primary text-lg font-semibold">Nenhum vídeo selecionado</p>
@@ -311,11 +311,11 @@ A busca real será implementada em breve.`;
       return (
         <div className="w-full h-full flex items-center justify-center bg-background">
           <div className="text-center max-w-md px-6">
-            <div className="w-20 h-20 bg-red-500/10 border-2 border-red-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
-              <IconAlertTriangle className="w-10 h-10 text-red-400" />
+            <div className="w-20 h-20 bg-gray-500/10 border-2 border-gray-500/30 rounded-full flex items-center justify-center mx-auto mb-4">
+              <IconAlertTriangle className="w-10 h-10 text-gray-400" />
             </div>
             <p className="text-white text-xl font-bold mb-3">Vídeo não disponível</p>
-            <p className="text-red-300 text-sm mb-2">⚠️ Este vídeo foi enviado em <strong>outro dispositivo/navegador</strong></p>
+            <p className="text-gray-300 text-sm mb-2">Este vídeo foi enviado em outro dispositivo/navegador</p>
             <p className="text-text-secondary text-xs mb-4">Vídeos do tipo "upload" são armazenados localmente. Para reproduzir, faça o upload novamente neste navegador.</p>
           </div>
         </div>
@@ -325,7 +325,7 @@ A busca real será implementada em breve.`;
       return (
         <div className="w-full h-full flex items-center justify-center bg-background">
           <div className="text-center">
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+            <div className="w-16 h-16 border-4 border-gray-500 border-t-transparent rounded-full mx-auto mb-4" />
             <p className="text-text-primary text-lg font-semibold">Carregando vídeo...</p>
           </div>
         </div>

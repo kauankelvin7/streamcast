@@ -121,22 +121,19 @@ export default function CastPlayerApp() {
       <button
         onClick={() => setShowAdmin(true)}
         className="absolute top-4 right-4 p-2 rounded-full font-semibold z-40 flex items-center gap-2
-        bg-primary/50 text-text-primary hover:bg-primary/80 backdrop-blur-sm transition-all duration-300
-        shadow-lg shadow-primary/30 hover:shadow-primary/50"
+        bg-gray-500/50 text-gray-800 border border-gray-400"
       >
         <IconSettings2 className="w-5 h-5" />
       </button>
       
       {currentVideo && showVideoInfo && (
-        <div className="absolute bottom-4 left-4 max-w-md px-4 py-2 bg-background/80 text-text-primary rounded-lg z-40 
-        backdrop-blur-sm shadow-lg shadow-black/30
-        border border-primary/20
-        animate-fade-in-up">
+        <div className="absolute bottom-4 left-4 max-w-md px-4 py-2 bg-gray-800/80 text-gray-100 rounded-lg z-40 
+        border border-gray-600">
           <p className="font-bold text-base truncate">{currentVideo.title}</p>
-          <p className="text-xs text-text-secondary">
-            {currentVideo.type === 'direct' ? '🎬 URL Direta' :
-             currentVideo.type === 'movie' ? '🎥 Filme' : 
-             currentVideo.type === 'tv' ? '📺 Série' : '📺 Episódio'}
+          <p className="text-xs text-gray-400">
+            {currentVideo.type === 'direct' ? 'URL Direta' :
+             currentVideo.type === 'movie' ? 'Filme' : 
+             currentVideo.type === 'tv' ? 'Série' : 'Episódio'}
           </p>
         </div>
       )}

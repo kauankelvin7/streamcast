@@ -1,0 +1,28 @@
+{
+  "name": "StreamCast - Player de Vídeo",
+  "short_name": "StreamCast",
+  "description": "Sistema avançado de reprodução de vídeos com playlist e agendamento automático",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f2937",
+  "theme_color": "#6b7280",
+  "orientation": "landscape-primary",
+  "categories": ["entertainment", "media", "video"],
+  "icons": [
+    {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEUAAAD///+l2Z/dAAAAEElEQVQYV2NgQAX/GJqBBAAA9m8A2p8kL7wAAAAASUVORK5CYII=",
+      "sizes": "16x16",
+      "type": "image/png"
+    },
+    {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEUAAAD///+l2Z/dAAAAEElEQVQYV2NgQAX/GJqBBAAA9m8A2p8kL7wAAAAASUVORK5CYII=",
+      "sizes": "32x32",
+      "type": "image/png"
+    },
+    {
+      "src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEUAAAD///+l2Z/dAAAAEElEQVQYV2NgQAX/GJqBBAAA9m8A2p8kL7wAAAAASUVORK5CYII=",
+      "sizes": "64x64",
+      "type": "image/png"
+    }
+  ]
+}

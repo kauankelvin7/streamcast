@@ -53,7 +53,7 @@ export default function VideoControls({
   };
 
   return (
-    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-4 text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+    <div className="absolute bottom-0 left-0 right-0 bg-black/70 p-4 text-white opacity-0 group-hover:opacity-100">
       {/* Progress Bar */}
       <div className="relative h-1.5 bg-white/20 rounded-full cursor-pointer mb-3">
         <input
@@ -66,7 +66,7 @@ export default function VideoControls({
           style={{ zIndex: 2 }}
         />
         <div
-          className="absolute top-0 left-0 h-full bg-primary rounded-full"
+          className="absolute top-0 left-0 h-full bg-gray-600 rounded-full"
           style={{ width: `${(currentTime / duration) * 100}%` }}
         />
       </div>
@@ -74,11 +74,11 @@ export default function VideoControls({
       {/* Controls */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button onClick={onPlayPause} className="hover:text-primary transition-colors">
+          <button onClick={onPlayPause} className="hover:text-gray-400">
             {isPaused ? <IconPlayerPlay size={24} /> : <IconPlayerPause size={24} />}
           </button>
           <div className="flex items-center gap-2" onMouseEnter={() => setShowVolumeSlider(true)} onMouseLeave={() => setShowVolumeSlider(false)}>
-            <button onClick={onMuteToggle} className="hover:text-primary transition-colors">
+            <button onClick={onMuteToggle} className="hover:text-gray-400">
               {isMuted || volume === 0 ? <IconVolumeOff size={24} /> : <IconVolume size={24} />}
             </button>
             {showVolumeSlider && (
@@ -100,12 +100,12 @@ export default function VideoControls({
         <div className="flex items-center gap-4">
           <button
             onClick={onFindSubtitles}
-            className={`hover:text-primary transition-colors ${hasSubtitles ? 'text-primary' : ''}`}
+            className={`hover:text-gray-400 ${hasSubtitles ? 'text-gray-400' : ''}`}
             title={hasSubtitles ? "Legenda Carregada" : "Procurar Legenda"}
           >
             <IconMessages size={24} />
           </button>
-          <button onClick={onFullscreenToggle} className="hover:text-primary transition-colors">
+          <button onClick={onFullscreenToggle} className="hover:text-gray-400">
             {isFullscreen ? <IconArrowsMinimize size={24} /> : <IconArrowsMaximize size={24} />}
           </button>
         </div>
