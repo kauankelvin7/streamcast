@@ -7,50 +7,37 @@ export const STORAGE_KEYS = {
   SCHEDULES: 'streamcast-schedules'
 } as const;
 
-export async function loadData<T>(key: string, defaultValue: T): Promise<T> {
+/**
+ * Carrega um dado do localStorage de forma síncrona.
+ */
+export function loadData<T>(key: string, defaultValue: T): T {
   try {
-    if (typeof window !== 'undefined' && (window as any).storage?.get) {
-      const result = await (window as any).storage.get(key, true);
-      if (result) {
-        const parsed = typeof result === 'string' ? JSON.parse(result) : 
-                      (result.value ? JSON.parse(result.value) : result);
-        
-        // Garantir que playerMode existe
-        if (key === STORAGE_KEYS.CONFIG && parsed && !parsed.playerMode) {
-          parsed.playerMode = 'vidsrc';
-        }
-        
-        return parsed || defaultValue;
-      }
+    const item = window.storage.get(key);
+    if (item === null) {
+      return defaultValue;
     }
-  } catch (e) {
-    console.warn('window.storage falhou, usando localStorage', e);
-  }
-
-  try {
-    const item = localStorage.getItem(key);
-    const parsed = item ? JSON.parse(item) : defaultValue;
     
-    // Garantir que playerMode existe
+    const parsed = JSON.parse(item);
+
+    // Garantir que playerMode existe no objeto de configuração
     if (key === STORAGE_KEYS.CONFIG && parsed && !parsed.playerMode) {
-      parsed.playerMode = 'vidsrc';
+      parsed.playerMode = 'vidsrc'; // Valor padrão
     }
     
     return parsed;
   } catch (e) {
+    console.error(`Erro ao carregar e parsear dados para a chave "${key}":`, e);
     return defaultValue;
   }
 }
 
-export async function saveData<T>(key: string, value: T): Promise<boolean> {
+/**
+ * Salva um dado no localStorage de forma síncrona.
+ */
+export function saveData<T>(key: string, value: T): boolean {
   try {
     const json = JSON.stringify(value);
-    
-    if (typeof window !== 'undefined' && (window as any).storage?.set) {
-      await (window as any).storage.set(key, json, true);
-    }
-    
-    localStorage.setItem(key, json);
+    window.storage.set(key, json);
     console.log('💾 Dados salvos localmente:', key);
     
     // Disparar evento customizado para notificar outras abas/frames
@@ -66,14 +53,15 @@ export async function saveData<T>(key: string, value: T): Promise<boolean> {
 }
 
 /**
- * Salva todos os dados (config, playlist, schedules) localmente E no Firebase
+ * Salva todos os dados (config, playlist, schedules) localmente E no Firebase.
+ * A parte local é síncrona, a parte do Firebase é assíncrona.
  */
 export async function saveAllData(config: any, playlist: any[], schedules: any[]): Promise<boolean> {
   try {
-    // Salvar localmente
-    await saveData(STORAGE_KEYS.CONFIG, config);
-    await saveData(STORAGE_KEYS.PLAYLIST, playlist);
-    await saveData(STORAGE_KEYS.SCHEDULES, schedules);
+    // Salvar localmente (síncrono)
+    saveData(STORAGE_KEYS.CONFIG, config);
+    saveData(STORAGE_KEYS.PLAYLIST, playlist);
+    saveData(STORAGE_KEYS.SCHEDULES, schedules);
     
     // Salvar no Firebase (se configurado)
     if (isFirebaseEnabled()) {
@@ -103,7 +91,7 @@ export async function saveAllData(config: any, playlist: any[], schedules: any[]
 }
 
 /**
- * Carrega todos os dados do Firebase (se disponível) ou localStorage
+ * Carrega todos os dados do Firebase (se disponível) ou retorna null para fallback para o localStorage.
  */
 export async function loadAllDataWithFirebase(): Promise<{
   config: any;
@@ -118,10 +106,10 @@ export async function loadAllDataWithFirebase(): Promise<{
       if (firebaseData) {
         console.log('☁️ Dados carregados do Firebase');
         
-        // Salva localmente também (cache)
-        await saveData(STORAGE_KEYS.CONFIG, firebaseData.config);
-        await saveData(STORAGE_KEYS.PLAYLIST, firebaseData.playlist);
-        await saveData(STORAGE_KEYS.SCHEDULES, firebaseData.schedules);
+        // Salva localmente também (cache síncrono)
+        saveData(STORAGE_KEYS.CONFIG, firebaseData.config);
+        saveData(STORAGE_KEYS.PLAYLIST, firebaseData.playlist);
+        saveData(STORAGE_KEYS.SCHEDULES, firebaseData.schedules);
         
         return {
           config: firebaseData.config,
@@ -131,11 +119,11 @@ export async function loadAllDataWithFirebase(): Promise<{
       }
     }
     
-    // Fallback: carrega do localStorage
-    console.log('📦 Carregando do localStorage (fallback)');
+    // Fallback: se o Firebase não estiver habilitado ou não tiver dados
+    console.log('📦 Firebase não disponível ou sem dados, usando localStorage.');
     return null;
   } catch (e) {
-    console.error('Erro ao carregar dados:', e);
-    return null;
+    console.error('Erro ao carregar dados do Firebase:', e);
+    return null; // Em caso de erro, fallback para localStorage
   }
 }

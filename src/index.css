@@ -13,7 +13,8 @@ body {
     Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #000;
+  background-color: #10001F;
+  color: #E0E0E0;
 }
 
 code {
@@ -28,17 +29,17 @@ code {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0b1220;
+  background: #10001F;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #3b82f6, #22d3ee);
+  background: linear-gradient(180deg, #8A2BE2, #FF00FF);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #60a5fa, #22d3ee);
+  background: linear-gradient(180deg, #FF00FF, #00FFFF);
 }
 
 /* Scrollbar thin utility */
@@ -49,11 +50,11 @@ code {
 
 /* Legacy compatibility: old teal scrollbar utility now maps to blue gradient */
 .scrollbar-thumb-blue-gradient::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #3b82f6, #22d3ee);
+  background: linear-gradient(180deg, #8A2BE2, #FF00FF);
 }
 
 .scrollbar-track-gray-800::-webkit-scrollbar-track {
-  background: #0b1220;
+  background: #10001F;
 }
 
 /* Truncate multiple lines */
@@ -87,7 +88,7 @@ input[type="range"]::-webkit-slider-thumb {
   height: 12px;
   width: 12px;
   border-radius: 50%;
-  background: #a855f7;
+  background: #8A2BE2;
   cursor: pointer;
   margin-top: -5px;
 }
@@ -96,7 +97,126 @@ input[type="range"]::-moz-range-thumb {
   height: 12px;
   width: 12px;
   border-radius: 50%;
-  background: #a855f7;
+  background: #8A2BE2;
   cursor: pointer;
   border: none;
 }
+
+/* Shimmer animation for admin panel */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-shimmer {
+  animation: shimmer 3s infinite;
+}
+
+/* Floating particles animation */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0) translateX(0) scale(1);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  50% {
+    transform: translateY(-100vh) translateX(20px) scale(1.5);
+  }
+}
+
+.animate-float {
+  animation: float 15s infinite ease-in-out;
+}
+
+/* Glow pulse animation */
+@keyframes glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(138, 43, 226, 0.4),
+                0 0 40px rgba(138, 43, 226, 0.2),
+                0 0 60px rgba(138, 43, 226, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(138, 43, 226, 0.6),
+                0 0 60px rgba(138, 43, 226, 0.4),
+                0 0 90px rgba(138, 43, 226, 0.2);
+  }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 3s infinite ease-in-out;
+}
+
+/* Gradient rotate animation */
+@keyframes gradient-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  background-size: 200% 200%;
+  animation: gradient-rotate 6s ease infinite;
+}
+
+/* Bounce subtle animation */
+@keyframes bounce-subtle {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.animate-bounce-subtle {
+  animation: bounce-subtle 2s infinite ease-in-out;
+}
+
+/* Scale pulse animation */
+@keyframes scale-pulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+.animate-scale-pulse {
+  animation: scale-pulse 3s infinite ease-in-out;
+}
+
+/* Neon glow border animation */
+@keyframes neon-border {
+  0%, 100% {
+    border-color: rgba(138, 43, 226, 0.5);
+    box-shadow: 0 0 10px rgba(138, 43, 226, 0.3),
+                inset 0 0 10px rgba(138, 43, 226, 0.2);
+  }
+  50% {
+    border-color: rgba(0, 255, 255, 0.8);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.5),
+                inset 0 0 20px rgba(0, 255, 255, 0.3);
+  }
+}
+
+.animate-neon-border {
+  animation: neon-border 4s infinite ease-in-out;
+}
+
+

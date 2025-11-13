@@ -8,17 +8,16 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https: http:; script-src 'self' 'unsafe-inline' 'unsafe-eval' https:; style-src 'self' 'unsafe-inline' https:; font-src 'self' https: data:; img-src 'self' data: https: http: blob:; media-src 'self' https: http: blob: data:; frame-src 'self' https:; connect-src 'self' https: http: wss: ws:; worker-src 'self' blob:;">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <title>StreamCast - Video Player Pro</title>
   </head>
-  <body>
+  <body class="bg-background">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Generate a neon-blue play favicon dynamically (PNG) and set it as the primary icon
+      // Generate a neon-purple play favicon dynamically (PNG) and set it as the primary icon
       (function() {
         try {
           const canvas = document.createElement('canvas');
@@ -26,25 +25,25 @@
           const ctx = canvas.getContext('2d');
           if (!ctx) return;
           // Background
-          ctx.fillStyle = '#0B1220';
+          ctx.fillStyle = '#10001F';
           ctx.fillRect(0, 0, 64, 64);
           // Soft inner glow circle
           const grd = ctx.createRadialGradient(32, 32, 6, 32, 32, 28);
-          grd.addColorStop(0, 'rgba(59,130,246,0.35)');
-          grd.addColorStop(1, 'rgba(34,211,238,0.05)');
+          grd.addColorStop(0, 'rgba(138, 43, 226, 0.35)');
+          grd.addColorStop(1, 'rgba(255, 0, 255, 0.05)');
           ctx.fillStyle = grd;
           ctx.beginPath(); ctx.arc(32, 32, 28, 0, Math.PI * 2); ctx.fill();
           // Play triangle
           const g = ctx.createLinearGradient(18, 18, 50, 50);
-          g.addColorStop(0, '#60A5FA');
-          g.addColorStop(1, '#22D3EE');
+          g.addColorStop(0, '#8A2BE2');
+          g.addColorStop(1, '#FF00FF');
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.moveTo(24, 18);
           ctx.lineTo(50, 32);
           ctx.lineTo(24, 46);
           ctx.closePath();
-          ctx.shadowColor = 'rgba(59,130,246,0.6)';
+          ctx.shadowColor = 'rgba(138, 43, 226, 0.6)';
           ctx.shadowBlur = 6;
           ctx.fill();
           const href = canvas.toDataURL('image/png');

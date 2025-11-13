@@ -10,6 +10,7 @@ export type VideoSource = {
   posterPath?: string;
   addedAt: string;
   tags?: string[];
+  isUpload?: boolean; // Marca se o vídeo é um upload local
   // Para vídeos enviados
   fileName?: string;
   fileSize?: number;

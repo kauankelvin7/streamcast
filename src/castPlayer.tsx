@@ -99,7 +99,7 @@ export default function CastPlayerApp() {
   };
   
   return (
-    <div className="relative w-full h-screen bg-black overflow-hidden">
+    <div className="relative w-full h-screen bg-background text-text-primary overflow-hidden">
       <div className="absolute inset-0">
         <VideoPlayer 
           config={{
@@ -120,18 +120,20 @@ export default function CastPlayerApp() {
       
       <button
         onClick={() => setShowAdmin(true)}
-        className="absolute top-2 right-2 sm:top-4 sm:right-4 px-3 py-2 sm:px-4 rounded-xl font-semibold z-40 flex items-center gap-2 text-sm sm:text-base
-        bg-slate-900/80 border border-blue-500/40 text-blue-300 hover:text-white hover:bg-slate-800/80 hover:border-blue-400/60
-        shadow-lg shadow-blue-500/20 backdrop-blur-sm transition-all duration-200"
+        className="absolute top-4 right-4 p-2 rounded-full font-semibold z-40 flex items-center gap-2
+        bg-primary/50 text-text-primary hover:bg-primary/80 backdrop-blur-sm transition-all duration-300
+        shadow-lg shadow-primary/30 hover:shadow-primary/50"
       >
-  <IconSettings2 className="w-4 h-4 sm:w-5 sm:h-5" />
-        <span className="hidden sm:inline">Admin</span>
+        <IconSettings2 className="w-5 h-5" />
       </button>
       
       {currentVideo && showVideoInfo && (
-        <div className="absolute bottom-2 left-2 right-2 sm:bottom-4 sm:left-4 sm:right-auto px-3 py-2 sm:px-4 bg-black/90 text-white rounded-lg z-40 transition-opacity duration-500">
-          <p className="font-semibold text-sm sm:text-base truncate">{currentVideo.title}</p>
-          <p className="text-xs text-gray-400">
+        <div className="absolute bottom-4 left-4 max-w-md px-4 py-2 bg-background/80 text-text-primary rounded-lg z-40 
+        backdrop-blur-sm shadow-lg shadow-black/30
+        border border-primary/20
+        animate-fade-in-up">
+          <p className="font-bold text-base truncate">{currentVideo.title}</p>
+          <p className="text-xs text-text-secondary">
             {currentVideo.type === 'direct' ? '🎬 URL Direta' :
              currentVideo.type === 'movie' ? '🎥 Filme' : 
              currentVideo.type === 'tv' ? '📺 Série' : '📺 Episódio'}

@@ -1,28 +1,14 @@
 /**
- * Storage API - Implementação simples usando localStorage
- * Substitui a API window.storage customizada
+ * Storage API - Implementação simples e síncrona usando localStorage.
  */
-
-interface StorageItem {
-  value: string;
-  persistent: boolean;
-  timestamp: number;
-}
-
 class StorageAPI {
   /**
-   * Obtém um item do armazenamento
+   * Obtém um item do armazenamento.
+   * Retorna o valor como string ou null se não encontrado.
    */
-  async get(key: string, persistent: boolean = true): Promise<StorageItem | null> {
+  get(key: string): string | null {
     try {
-      const item = localStorage.getItem(key);
-      if (!item) return null;
-      
-      return {
-        value: item,
-        persistent,
-        timestamp: Date.now()
-      };
+      return localStorage.getItem(key);
     } catch (error) {
       console.error('Storage.get error:', error);
       return null;
@@ -30,38 +16,36 @@ class StorageAPI {
   }
 
   /**
-   * Salva um item no armazenamento
+   * Salva um item no armazenamento.
    */
-  async set(key: string, value: string, persistent: boolean = true): Promise<void> {
+  set(key: string, value: string): void {
     try {
       localStorage.setItem(key, value);
     } catch (error) {
       console.error('Storage.set error:', error);
-      throw error;
+      // Opcional: relançar o erro se a aplicação precisar saber que a escrita falhou.
     }
   }
 
   /**
-   * Remove um item do armazenamento
+   * Remove um item do armazenamento.
    */
-  async remove(key: string): Promise<void> {
+  remove(key: string): void {
     try {
       localStorage.removeItem(key);
     } catch (error) {
       console.error('Storage.remove error:', error);
-      throw error;
     }
   }
 
   /**
-   * Limpa todo o armazenamento
+   * Limpa todo o armazenamento (todos os itens).
    */
-  async clear(): Promise<void> {
+  clear(): void {
     try {
       localStorage.clear();
     } catch (error) {
       console.error('Storage.clear error:', error);
-      throw error;
     }
   }
 }
