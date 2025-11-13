@@ -16,12 +16,27 @@ import { findSubtitles, getSubtitleDownloadUrl, Subtitle } from '../utils/subtit
     setSubError(null);
     setFfmpegCmd(null);
     try {
-      if (!video.imdb) {
-        setSubError('Este vídeo não possui IMDB ID.');
-        setSubLoadingId(null);
-        return;
+      let subs: Subtitle[] | null = null;
+      if (video.imdb) {
+        subs = await findSubtitles(video.imdb, video.season, video.episode);
+      } else if (video.title) {
+        // Busca por nome se não houver IMDB
+        const query = encodeURIComponent(video.title);
+        const url = `https://api.opensubtitles.com/api/v1/subtitles?query=${query}&languages=pb,pt,en`;
+        const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
+        if (!response.ok) throw new Error('OpenSubtitles API Error');
+        const result = await response.json();
+        subs = result.data?.map((item: any) => ({
+          SubFileName: item.attributes.files[0]?.file_name || 'Unknown',
+          SubDownloadLink: item.attributes.files[0]?.file_id ? `https://api.opensubtitles.com/api/v1/download` : '',
+          ZipDownloadLink: '',
+          LanguageName: item.attributes.language,
+          SubFormat: item.attributes.files[0]?.file_name.split('.').pop() || 'srt',
+          Score: item.attributes.ratings,
+          SubtitlesLink: item.attributes.url,
+          IDSubtitleFile: item.attributes.files[0]?.file_id,
+        })) || null;
       }
-      const subs = await findSubtitles(video.imdb, video.season, video.episode);
       if (!subs || subs.length === 0) {
         setSubError('Nenhuma legenda encontrada.');
         setSubLoadingId(null);
@@ -724,54 +739,56 @@ export default function AdminPanel({ config: initialConfig, playlist: initialPla
                             )}
                           </div>
                           {/* Legendas */}
-                          <div className="mt-3 space-y-2">
-                            <button
-                              onClick={() => handleSearchSubtitles(video)}
-                              disabled={subLoadingId === video.id}
-                              className="px-4 py-2 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-lg shadow-md flex items-center gap-2 hover:scale-105 transition-all duration-300"
-                            >
-                              <IconFileText className="w-4 h-4" />
-                              {subLoadingId === video.id ? 'Buscando...' : 'Buscar Legenda (PT)'}
-                            </button>
-                            {subResults[video.id] && (
-                              <div className="space-y-1">
-                                {subResults[video.id].map(sub => (
-                                  <div key={sub.IDSubtitleFile} className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2 border border-primary/20">
-                                    <span className="text-xs font-bold text-primary">{sub.LanguageName}</span>
-                                    <span className="text-xs text-white">{sub.SubFileName}</span>
-                                    <button
-                                      onClick={() => handleDownloadSubtitle(sub)}
-                                      className="px-2 py-1 bg-gradient-to-r from-primary to-accent text-white rounded shadow flex items-center gap-1 text-xs hover:scale-105"
-                                    >
-                                      <IconDownload className="w-4 h-4" />
-                                      Baixar
-                                    </button>
-                                    <button
-                                      onClick={() => handleGenerateFfmpeg(video, sub)}
-                                      className="px-2 py-1 bg-gradient-to-r from-secondary to-primary text-white rounded shadow flex items-center gap-1 text-xs hover:scale-105"
-                                    >
-                                      <IconMovie className="w-4 h-4" />
-                                      Incorporar Legenda ao Vídeo
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                            {subError && (
-                              <div className="text-xs text-red-400 font-bold mt-2">{subError}</div>
-                            )}
-                            {ffmpegCmd && (
-                              <div className="mt-2 p-2 bg-black/40 border border-primary/30 rounded-lg text-xs text-white">
-                                <span className="font-bold text-primary">Como incorporar legenda ao vídeo:</span>
-                                <pre className="whitespace-pre-wrap break-all text-accent mt-1">{ffmpegCmd}</pre>
-                                <button
-                                  onClick={() => {navigator.clipboard.writeText(ffmpegCmd || ''); alert('Comando copiado!')}}
-                                  className="mt-2 px-3 py-1 bg-gradient-to-r from-primary to-accent text-white rounded shadow text-xs"
-                                >Copiar instrução</button>
-                                <div className="text-slate-400 text-xs mt-2">Cole este comando no seu computador para gerar o vídeo com legenda embutida.</div>
-                              </div>
-                            )}
-                          </div>
+                          {(video.imdb || video.title) && (
+                            <div className="mt-3 space-y-2">
+                              <button
+                                onClick={() => handleSearchSubtitles(video)}
+                                disabled={subLoadingId === video.id}
+                                className="px-4 py-2 bg-gradient-to-r from-primary to-accent text-white font-bold rounded-lg shadow-md flex items-center gap-2 hover:scale-105 transition-all duration-300"
+                              >
+                                <IconFileText className="w-4 h-4" />
+                                {subLoadingId === video.id ? 'Buscando...' : 'Buscar Legenda (PT)'}
+                              </button>
+                              {subResults[video.id] && (
+                                <div className="space-y-1">
+                                  {subResults[video.id].map(sub => (
+                                    <div key={sub.IDSubtitleFile} className="flex items-center gap-2 bg-black/30 rounded-lg px-3 py-2 border border-primary/20">
+                                      <span className="text-xs font-bold text-primary">{sub.LanguageName}</span>
+                                      <span className="text-xs text-white">{sub.SubFileName}</span>
+                                      <button
+                                        onClick={() => handleDownloadSubtitle(sub)}
+                                        className="px-2 py-1 bg-gradient-to-r from-primary to-accent text-white rounded shadow flex items-center gap-1 text-xs hover:scale-105"
+                                      >
+                                        <IconDownload className="w-4 h-4" />
+                                        Baixar
+                                      </button>
+                                      <button
+                                        onClick={() => handleGenerateFfmpeg(video, sub)}
+                                        className="px-2 py-1 bg-gradient-to-r from-secondary to-primary text-white rounded shadow flex items-center gap-1 text-xs hover:scale-105"
+                                      >
+                                        <IconMovie className="w-4 h-4" />
+                                        Incorporar Legenda ao Vídeo
+                                      </button>
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                              {subError && (
+                                <div className="text-xs text-red-400 font-bold mt-2">{subError}</div>
+                              )}
+                              {ffmpegCmd && (
+                                <div className="mt-2 p-2 bg-black/40 border border-primary/30 rounded-lg text-xs text-white">
+                                  <span className="font-bold text-primary">Como incorporar legenda ao vídeo:</span>
+                                  <pre className="whitespace-pre-wrap break-all text-accent mt-1">{ffmpegCmd}</pre>
+                                  <button
+                                    onClick={() => {navigator.clipboard.writeText(ffmpegCmd || ''); alert('Comando copiado!')}}
+                                    className="mt-2 px-3 py-1 bg-gradient-to-r from-primary to-accent text-white rounded shadow text-xs"
+                                  >Copiar instrução</button>
+                                  <div className="text-slate-400 text-xs mt-2">Cole este comando no seu computador para gerar o vídeo com legenda embutida.</div>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                         <div className="relative flex items-center gap-2">
                           <button
