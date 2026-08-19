@@ -265,7 +265,6 @@ export default function CatalogPanel() {
                   <img
                     src={spotlightBackdropUrl}
                     alt={spotlightItem.title ?? spotlightItem.name}
-                    crossOrigin="anonymous"
                     style={{
                       position: 'absolute',
                       inset: 0,
@@ -404,32 +403,6 @@ export default function CatalogPanel() {
                       )}
                     </div>
                   </div>
-
-                  {/* Right 3D Poster Banner Card */}
-                  {spotlightPosterUrl && (
-                    <div style={{
-                      display: 'none',
-                      flexShrink: 0,
-                      width: 175,
-                      aspectRatio: '2/3',
-                      borderRadius: 18,
-                      overflow: 'hidden',
-                      border: '2px solid rgba(255,255,255,0.18)',
-                      boxShadow: '0 20px 48px rgba(0,0,0,0.8), 0 0 32px rgba(229,89,29,0.3)',
-                      transform: 'perspective(800px) rotateY(-8deg)',
-                      background: '#131317',
-                    }}
-                    className="spotlight-poster-card"
-                    >
-                      <img
-                        src={spotlightPosterUrl}
-                        alt={spotlightItem.title ?? spotlightItem.name}
-                        crossOrigin="anonymous"
-                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                      />
-                    </div>
-                  )}
-                  <style>{`@media (min-width: 900px) { .spotlight-poster-card { display: block !important; } }`}</style>
                 </div>
               </div>
             </div>

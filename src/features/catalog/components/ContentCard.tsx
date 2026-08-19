@@ -65,7 +65,6 @@ export default function ContentCard({ item, onClick, index = 0 }: Props) {
             src={currentImgSrc} 
             alt={title} 
             decoding="async"
-            crossOrigin="anonymous"
             onError={() => {
               if (!failedMain) {
                 setFailedMain(true);
