@@ -26,6 +26,9 @@ interface ContentRowProps {
   onItemClick?: (item: any) => void;
 }
 
+const CARD_WIDTH = 175;
+const CARD_GAP = 20;
+
 export const ContentRow: React.FC<ContentRowProps> = ({ 
   title, 
   subtitle,
@@ -35,51 +38,58 @@ export const ContentRow: React.FC<ContentRowProps> = ({
   type = 'movie', 
   onItemClick 
 }) => {
-  const rowRef = useRef<HTMLDivElement>(null);
-  const [showLeft, setShowLeft] = useState(false);
-  const [showRight, setShowRight] = useState(true);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [offset, setOffset] = useState(0);
+  const [viewportWidth, setViewportWidth] = useState(0);
 
-  const scroll = (direction: 'left' | 'right') => {
-    if (rowRef.current) {
-      const { scrollLeft, clientWidth } = rowRef.current;
-      const scrollAmount = clientWidth * 0.75; 
-      const scrollTo = direction === 'left' 
-        ? scrollLeft - scrollAmount 
-        : scrollLeft + scrollAmount;
-      
-      rowRef.current.scrollTo({ left: scrollTo, behavior: 'smooth' });
-    }
-  };
-
-  const handleScroll = useCallback(() => {
-    if (rowRef.current) {
-      const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
-      setShowLeft(scrollLeft > 10);
-      setShowRight(scrollLeft < scrollWidth - clientWidth - 10);
+  // Medir largura do viewport estrito para alinhamento perfeito
+  const updateViewportWidth = useCallback(() => {
+    if (containerRef.current) {
+      setViewportWidth(containerRef.current.clientWidth);
     }
   }, []);
 
   useEffect(() => {
-    const row = rowRef.current;
-    if (row) {
-      row.addEventListener('scroll', handleScroll, { passive: true });
-      handleScroll();
-      return () => row.removeEventListener('scroll', handleScroll);
-    }
-  }, [items, handleScroll]);
+    updateViewportWidth();
+    window.addEventListener('resize', updateViewportWidth);
+    return () => window.removeEventListener('resize', updateViewportWidth);
+  }, [updateViewportWidth]);
+
+  // Reset offset ao mudar de itens
+  useEffect(() => {
+    setOffset(0);
+  }, [items]);
+
+  const totalTrackWidth = items.length * CARD_WIDTH + Math.max(0, items.length - 1) * CARD_GAP;
+  const maxOffset = Math.max(0, totalTrackWidth - viewportWidth);
+
+  // Calcula quantos cards cabem inteiramente na tela
+  const cardsPerPage = Math.max(1, Math.floor((viewportWidth + CARD_GAP) / (CARD_WIDTH + CARD_GAP)));
+  const pageStep = cardsPerPage * (CARD_WIDTH + CARD_GAP);
+
+  const handleNext = () => {
+    setOffset(prev => Math.min(maxOffset, prev + pageStep));
+  };
+
+  const handlePrev = () => {
+    setOffset(prev => Math.max(0, prev - pageStep));
+  };
+
+  const canScrollLeft = offset > 0;
+  const canScrollRight = offset < maxOffset - 5;
 
   if (isLoading) {
     return (
-      <div style={{ marginBottom: 40, position: 'relative' }}>
-        <div style={{ padding: '0 5% 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ marginBottom: 44, padding: '0 5%' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
           <div style={{ width: 180, height: 24, borderRadius: 8 }} className="skeleton-shimmer" />
         </div>
-        <div style={{ display: 'flex', gap: 20, padding: '0 5%', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', gap: CARD_GAP, overflow: 'hidden' }}>
           {[...Array(6)].map((_, i) => (
             <div 
               key={i} 
               className="skeleton-shimmer"
-              style={{ flexShrink: 0, width: 175, aspectRatio: '2/3', borderRadius: 18, border: '1px solid rgba(255,255,255,0.04)' }}
+              style={{ flexShrink: 0, width: CARD_WIDTH, aspectRatio: '2/3', borderRadius: 18, border: '1px solid rgba(255,255,255,0.04)' }}
             />
           ))}
         </div>
@@ -90,13 +100,14 @@ export const ContentRow: React.FC<ContentRowProps> = ({
   if (!items || items.length === 0) return null;
 
   return (
-    <div style={{ marginBottom: 44, position: 'relative' }}>
-      {/* Row Header */}
+    <div style={{ marginBottom: 48, padding: '0 5%', position: 'relative' }}>
+      
+      {/* ── ROW HEADER (ALINHADO 100% COM A BORDA DOS CARDS) ── */}
       <div style={{ 
         display: 'flex', 
         justifyContent: 'space-between', 
         alignItems: 'flex-end', 
-        padding: '0 5% 14px',
+        marginBottom: 14,
       }}>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -119,33 +130,37 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           )}
         </div>
 
-        {/* Total indicator */}
-        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
-          {items.length} títulos
-        </span>
+        {/* Navigation Indicator / Buttons in Header on Mobile / Total */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+            {items.length} títulos
+          </span>
+        </div>
       </div>
 
-      {/* Carousel Container */}
+      {/* ── CAROUSEL WRAPPER WITH STRICT ALIGNMENT & BOUNDARY ── */}
       <div style={{ position: 'relative' }}>
-
-        {/* ── LEFT NAV BUTTON ── */}
+        
+        {/* Left Arrow Button */}
         <AnimatePresence>
-          {showLeft && (
+          {canScrollLeft && (
             <motion.button
               initial={{ opacity: 0, scale: 0.8, x: -10 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.8, x: -10 }}
-              onClick={() => scroll('left')}
+              onClick={handlePrev}
               style={{
                 position: 'absolute',
-                top: 'calc(50% - 8px)',
+                top: '50%',
                 transform: 'translateY(-50%)',
                 zIndex: 30,
-                left: '1.5%',
+                left: -22,
                 width: 44,
                 height: 44,
                 borderRadius: '50%',
-                background: 'rgba(10, 10, 14, 0.88)',
+                background: 'rgba(14, 14, 18, 0.95)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 border: '1px solid rgba(229,89,29,0.5)',
                 color: '#fff',
                 display: 'flex',
@@ -158,10 +173,10 @@ export const ContentRow: React.FC<ContentRowProps> = ({
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#E5591D';
                 e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(10, 10, 14, 0.88)';
+                e.currentTarget.style.background = 'rgba(14, 14, 18, 0.95)';
                 e.currentTarget.style.borderColor = 'rgba(229,89,29,0.5)';
                 e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
               }}
@@ -172,49 +187,59 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           )}
         </AnimatePresence>
 
-        {/* ── HORIZONTAL SLIDING TRACK (100% LIMPO SEM QUADRADOS DE BLUR) ── */}
-        <div
-          ref={rowRef}
+        {/* ── STRICT VIEWPORT (OVERFLOW HIDDEN TO PREVENT ANY LEFT BLEEDING) ── */}
+        <div 
+          ref={containerRef}
           style={{ 
-            display: 'flex', 
-            gap: 20, 
-            padding: '0 5% 16px', 
-            overflowX: 'auto', 
-            scrollBehavior: 'smooth',
-            scrollbarWidth: 'none',
-            WebkitOverflowScrolling: 'touch',
+            width: '100%', 
+            overflow: 'hidden', 
+            borderRadius: 6,
+            padding: '4px 0 16px 0',
           }}
         >
-          {items.map((item, idx) => (
-            <div key={`${item.id}-${idx}`} style={{ flexShrink: 0, width: 175 }}>
-              <ContentCard 
-                item={item} 
-                index={idx}
-                type={type} 
-                onClick={() => onItemClick?.(item)} 
-              />
-            </div>
-          ))}
+          {/* ── TRANSLATING INNER TRACK ── */}
+          <div
+            style={{
+              display: 'flex',
+              gap: CARD_GAP,
+              transform: `translateX(-${offset}px)`,
+              transition: 'transform 0.45s cubic-bezier(0.25, 1, 0.5, 1)',
+              width: 'max-content',
+            }}
+          >
+            {items.map((item, idx) => (
+              <div key={`${item.id}-${idx}`} style={{ flexShrink: 0, width: CARD_WIDTH }}>
+                <ContentCard 
+                  item={item} 
+                  index={idx}
+                  type={type} 
+                  onClick={() => onItemClick?.(item)} 
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* ── RIGHT NAV BUTTON ── */}
+        {/* Right Arrow Button */}
         <AnimatePresence>
-          {showRight && (
+          {canScrollRight && (
             <motion.button
               initial={{ opacity: 0, scale: 0.8, x: 10 }}
               animate={{ opacity: 1, scale: 1, x: 0 }}
               exit={{ opacity: 0, scale: 0.8, x: 10 }}
-              onClick={() => scroll('right')}
+              onClick={handleNext}
               style={{
                 position: 'absolute',
-                top: 'calc(50% - 8px)',
+                top: '50%',
                 transform: 'translateY(-50%)',
                 zIndex: 30,
-                right: '1.5%',
+                right: -22,
                 width: 44,
                 height: 44,
                 borderRadius: '50%',
-                background: 'rgba(10, 10, 14, 0.88)',
+                background: 'rgba(14, 14, 18, 0.95)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 border: '1px solid rgba(229,89,29,0.5)',
                 color: '#fff',
                 display: 'flex',
@@ -227,10 +252,10 @@ export const ContentRow: React.FC<ContentRowProps> = ({
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#E5591D';
                 e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(10, 10, 14, 0.88)';
+                e.currentTarget.style.background = 'rgba(14, 14, 18, 0.95)';
                 e.currentTarget.style.borderColor = 'rgba(229,89,29,0.5)';
                 e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
               }}
