@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Film } from 'lucide-react';
+import { Film, Star } from 'lucide-react';
 import { tmdb } from '@lib/tmdb';
 
 interface Props {
@@ -12,16 +12,19 @@ interface Props {
 export default function ContentCard({ item, onClick, index = 0 }: Props) {
   const [hovered, setHovered] = useState(false);
   const [imageError, setImageError] = useState(false);
-  const title = item.title ?? item.name;
+  const title = item.title ?? item.name ?? 'Sem título';
+  
   let posterUrl = item.thumbnail || item.poster || item.poster_path;
   if (item.poster_path && !item.poster_path.startsWith('http')) {
     posterUrl = tmdb.getImageUrl(item.poster_path, 'w500');
   }
-  const yearStr = item.release_date?.split('-')[0] ?? item.first_air_date?.split('-')[0] ?? item.year ?? '';
-  const year = parseInt(yearStr, 10);
-  const isNew = year >= 2026;
 
-  const delay = Math.min(index * 0.03, 0.3);
+  const yearStr = item.release_date?.split('-')[0] ?? item.first_air_date?.split('-')[0] ?? item.year ?? '';
+  const rating = item.vote_average ? Number(item.vote_average).toFixed(1) : null;
+  const year = parseInt(yearStr, 10);
+  const isNew = year >= 2025;
+
+  const delay = Math.min(index * 0.02, 0.25);
 
   return (
     <div 
@@ -35,15 +38,15 @@ export default function ContentCard({ item, onClick, index = 0 }: Props) {
         position: 'relative',
         width: '100%',
         cursor: 'pointer',
-        borderRadius: 16,
+        borderRadius: 18,
         overflow: 'hidden',
-        background: '#141418',
-        border: hovered ? '1px solid rgba(229,89,29,0.3)' : '1px solid rgba(255,255,255,0.04)',
+        background: '#131317',
+        border: hovered ? '1px solid rgba(229,89,29,0.45)' : '1px solid rgba(255,255,255,0.05)',
         transition: 'all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1)',
         transform: hovered ? 'translateY(-8px) scale(1.03)' : 'translateY(0) scale(1)',
         boxShadow: hovered 
-          ? '0 24px 48px rgba(0,0,0,0.4), 0 0 30px rgba(229,89,29,0.1)' 
-          : '0 2px 8px rgba(0,0,0,0.2)',
+          ? '0 24px 48px rgba(0,0,0,0.6), 0 0 32px rgba(229,89,29,0.15)' 
+          : '0 4px 16px rgba(0,0,0,0.3)',
         opacity: 0,
         animationDelay: `${delay}s`,
         outline: 'none',
@@ -81,38 +84,57 @@ export default function ContentCard({ item, onClick, index = 0 }: Props) {
           </div>
         )}
 
+        {/* Top Badges (Rating & Novo) */}
+        <div style={{ position: 'absolute', top: 10, left: 10, right: 10, display: 'flex', justifyContent: 'space-between', alignItems: 'center', zIndex: 10 }}>
+          {rating && Number(rating) > 0 ? (
+            <span style={{
+              background: 'rgba(0,0,0,0.65)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: '#FFD700',
+              fontSize: 11,
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: 8,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
+              boxShadow: '0 2px 8px rgba(0,0,0,0.4)',
+            }}>
+              <Star size={10} fill="#FFD700" color="#FFD700" />
+              {rating}
+            </span>
+          ) : <div />}
+
+          {isNew && (
+            <span style={{
+              background: 'rgba(229,89,29,0.85)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
+              color: '#fff',
+              fontSize: 10,
+              fontFamily: "'Inter', sans-serif",
+              fontWeight: 700,
+              padding: '3px 8px',
+              borderRadius: 8,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              boxShadow: '0 2px 10px rgba(229,89,29,0.4)',
+            }}>
+              Novo
+            </span>
+          )}
+        </div>
+
         {/* Gradient Overlay */}
         <div style={{
           position: 'absolute',
           inset: 0,
-          background: 'linear-gradient(to top, rgba(10,10,12,0.95) 0%, rgba(10,10,12,0.4) 50%, transparent 100%)',
+          background: 'linear-gradient(to top, rgba(10,10,12,0.98) 0%, rgba(10,10,12,0.5) 40%, transparent 100%)',
           transition: 'opacity 0.3s',
         }} />
-
-        {/* Badge NOVO */}
-        {isNew && (
-          <span style={{
-            position: 'absolute',
-            top: 12,
-            left: 12,
-            background: 'rgba(255,255,255,0.12)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '1px solid rgba(255,255,255,0.2)',
-            color: '#fff',
-            fontSize: 10,
-            fontFamily: "'Inter', sans-serif",
-            fontWeight: 700,
-            padding: '4px 10px',
-            borderRadius: 999,
-            textTransform: 'uppercase' as const,
-            letterSpacing: '0.06em',
-            zIndex: 10,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-          }}>
-            Novo
-          </span>
-        )}
 
         {/* Text Footer */}
         <div style={{
@@ -125,8 +147,8 @@ export default function ContentCard({ item, onClick, index = 0 }: Props) {
         }}>
           <h3 className="line-clamp-2" style={{ 
             fontFamily: "'Inter', sans-serif",
-            fontWeight: 500, 
-            fontSize: 14, 
+            fontWeight: 600, 
+            fontSize: 13, 
             color: hovered ? '#E5591D' : '#fff',
             lineHeight: 1.35,
             transition: 'color 0.25s',
@@ -137,12 +159,12 @@ export default function ContentCard({ item, onClick, index = 0 }: Props) {
           {yearStr && (
             <p style={{ 
               fontFamily: "'Inter', sans-serif",
-              fontWeight: 400, 
-              fontSize: 12, 
-              color: 'rgba(255,255,255,0.4)', 
-              marginTop: 6,
+              fontWeight: 500, 
+              fontSize: 11, 
+              color: 'rgba(255,255,255,0.45)', 
+              marginTop: 5,
               margin: 0,
-              marginBlockStart: 6,
+              marginBlockStart: 5,
             }}>
               {yearStr}
             </p>

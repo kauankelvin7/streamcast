@@ -107,20 +107,56 @@ export const tmdb = {
     }
   },
 
-  async getTrending(type: 'movie' | 'tv' | 'all', window: 'day' | 'week' = 'week') {
-    return this.fetch<TMDBSearchResponse>(`/trending/${type}/${window}`);
+  async getTrending(type: 'movie' | 'tv' | 'all', window: 'day' | 'week' = 'week', page = 1) {
+    return this.fetch<TMDBSearchResponse>(`/trending/${type}/${window}`, { page });
   },
 
-  async getAnimeTrending() {
+  async getTopRated(type: 'movie' | 'tv' = 'movie', page = 1) {
+    return this.fetch<TMDBSearchResponse>(`/${type}/top_rated`, { page });
+  },
+
+  async getPopular(type: 'movie' | 'tv' = 'movie', page = 1) {
+    return this.fetch<TMDBSearchResponse>(`/${type}/popular`, { page });
+  },
+
+  async getFamilyMovies(page = 1) {
+    return this.fetch<TMDBSearchResponse>('/discover/movie', {
+      with_genres: '10751,16', // Família & Animação
+      sort_by: 'popularity.desc',
+      'vote_count.gte': '150',
+      page,
+    });
+  },
+
+  async getByDecade(startYear: number, endYear: number, page = 1) {
+    return this.fetch<TMDBSearchResponse>('/discover/movie', {
+      'primary_release_date.gte': `${startYear}-01-01`,
+      'primary_release_date.lte': `${endYear}-12-31`,
+      sort_by: 'vote_average.desc',
+      'vote_count.gte': '400',
+      page,
+    });
+  },
+
+  async discoverMovies(params: Record<string, string | number> = {}) {
+    return this.fetch<TMDBSearchResponse>('/discover/movie', params);
+  },
+
+  async discoverTV(params: Record<string, string | number> = {}) {
+    return this.fetch<TMDBSearchResponse>('/discover/tv', params);
+  },
+
+  async getAnimeTrending(page = 1) {
     return this.fetch<TMDBSearchResponse>('/discover/tv', {
       with_genres: '16',
       sort_by: 'popularity.desc',
       'vote_count.gte': '100',
+      page,
     });
   },
 
-  async getAnime(_page = 1) {
-    return this.getAnimeTrending();
+  async getAnime(page = 1) {
+    return this.getAnimeTrending(page);
   },
 
   async getTVDetails(id: number) {
