@@ -128,29 +128,6 @@ export const ContentRow: React.FC<ContentRowProps> = ({
       {/* Carousel Container */}
       <div style={{ position: 'relative' }}>
 
-        {/* ── LEFT BLUR & VIGNETTE FADE EFFECT ── */}
-        <AnimatePresence>
-          {showLeft && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 16,
-                left: 0,
-                width: 70,
-                zIndex: 20,
-                background: 'linear-gradient(90deg, #08080B 0%, rgba(8,8,11,0.7) 50%, transparent 100%)',
-                backdropFilter: 'blur(3px)',
-                WebkitBackdropFilter: 'blur(3px)',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-        </AnimatePresence>
-
         {/* ── LEFT NAV BUTTON ── */}
         <AnimatePresence>
           {showLeft && (
@@ -164,30 +141,28 @@ export const ContentRow: React.FC<ContentRowProps> = ({
                 top: 'calc(50% - 8px)',
                 transform: 'translateY(-50%)',
                 zIndex: 30,
-                left: '2.5%',
+                left: '1.5%',
                 width: 44,
                 height: 44,
                 borderRadius: '50%',
-                background: 'rgba(18, 18, 24, 0.92)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(229,89,29,0.35)',
+                background: 'rgba(10, 10, 14, 0.88)',
+                border: '1px solid rgba(229,89,29,0.5)',
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.8), 0 0 16px rgba(229,89,29,0.25)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.8), 0 0 20px rgba(229,89,29,0.35)',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#E5591D';
                 e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(18, 18, 24, 0.92)';
-                e.currentTarget.style.borderColor = 'rgba(229,89,29,0.35)';
+                e.currentTarget.style.background = 'rgba(10, 10, 14, 0.88)';
+                e.currentTarget.style.borderColor = 'rgba(229,89,29,0.5)';
                 e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
               }}
               aria-label="Deslizar para esquerda"
@@ -197,7 +172,7 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           )}
         </AnimatePresence>
 
-        {/* ── HORIZONTAL SLIDING TRACK ── */}
+        {/* ── HORIZONTAL SLIDING TRACK (100% LIMPO SEM QUADRADOS DE BLUR) ── */}
         <div
           ref={rowRef}
           style={{ 
@@ -222,29 +197,6 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           ))}
         </div>
 
-        {/* ── RIGHT BLUR & VIGNETTE FADE EFFECT ── */}
-        <AnimatePresence>
-          {showRight && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              style={{
-                position: 'absolute',
-                top: 0,
-                bottom: 16,
-                right: 0,
-                width: 70,
-                zIndex: 20,
-                background: 'linear-gradient(270deg, #08080B 0%, rgba(8,8,11,0.7) 50%, transparent 100%)',
-                backdropFilter: 'blur(3px)',
-                WebkitBackdropFilter: 'blur(3px)',
-                pointerEvents: 'none',
-              }}
-            />
-          )}
-        </AnimatePresence>
-
         {/* ── RIGHT NAV BUTTON ── */}
         <AnimatePresence>
           {showRight && (
@@ -258,30 +210,28 @@ export const ContentRow: React.FC<ContentRowProps> = ({
                 top: 'calc(50% - 8px)',
                 transform: 'translateY(-50%)',
                 zIndex: 30,
-                right: '2.5%',
+                right: '1.5%',
                 width: 44,
                 height: 44,
                 borderRadius: '50%',
-                background: 'rgba(18, 18, 24, 0.92)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '1px solid rgba(229,89,29,0.35)',
+                background: 'rgba(10, 10, 14, 0.88)',
+                border: '1px solid rgba(229,89,29,0.5)',
                 color: '#fff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                boxShadow: '0 8px 24px rgba(0,0,0,0.8), 0 0 16px rgba(229,89,29,0.25)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.8), 0 0 20px rgba(229,89,29,0.35)',
                 transition: 'all 0.2s ease',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.background = '#E5591D';
                 e.currentTarget.style.borderColor = 'transparent';
-                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.12)';
               }}
               onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'rgba(18, 18, 24, 0.92)';
-                e.currentTarget.style.borderColor = 'rgba(229,89,29,0.35)';
+                e.currentTarget.style.background = 'rgba(10, 10, 14, 0.88)';
+                e.currentTarget.style.borderColor = 'rgba(229,89,29,0.5)';
                 e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
               }}
               aria-label="Deslizar para direita"
