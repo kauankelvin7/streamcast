@@ -7,6 +7,7 @@ import ContentRow from './ContentRow';
 import SyncModal from './SyncModal';
 import YoutubeModal from './YoutubeModal';
 import EmbedCodePanel from '@features/admin/components/EmbedCodePanel';
+import SurpriseBoxButton from './SurpriseBoxButton';
 import { Tv, Film, Sparkles, Youtube, Flame, Star, Users, History, Play, Share2 } from 'lucide-react';
 
 type Tab = 'home' | 'top_rated' | 'family' | 'decades' | 'tv' | 'anime';
@@ -121,6 +122,29 @@ export default function CatalogPanel() {
     queryKey: ['catalog', 'anime'],
     queryFn: () => tmdb.getAnimeTrending(1),
   });
+
+  // Combina todos os filmes carregados para a Caixa Misteriosa
+  const allMoviesForSurprise = useMemo(() => {
+    const lists = [
+      trendingMovies?.results,
+      topRatedMovies?.results,
+      familyMovies?.results,
+      recentDecade?.results,
+      classicDecade?.results,
+    ];
+    const seen = new Set<number>();
+    const merged: any[] = [];
+    for (const list of lists) {
+      if (!list) continue;
+      for (const item of list) {
+        if (!seen.has(item.id)) {
+          seen.add(item.id);
+          merged.push(item);
+        }
+      }
+    }
+    return merged;
+  }, [trendingMovies, topRatedMovies, familyMovies, recentDecade, classicDecade]);
 
   // Spotlight do Destaque da Semana
   const spotlightItem = useMemo(() => {
@@ -426,13 +450,20 @@ export default function CatalogPanel() {
               })}
             </div>
 
-            <button
-              onClick={() => setShowYoutubeModal(true)}
-              className="cp-yt-btn"
-            >
-              <Youtube size={16} />
-              Tocar YouTube
-            </button>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+              <SurpriseBoxButton
+                allMovies={allMoviesForSurprise}
+                onSelect={handleSelect}
+              />
+
+              <button
+                onClick={() => setShowYoutubeModal(true)}
+                className="cp-yt-btn"
+              >
+                <Youtube size={16} />
+                Tocar YouTube
+              </button>
+            </div>
           </div>
 
           {/* ── SEÇÕES DESLIZANTES DO CATÁLOGO (SLIDING CAROUSELS COM DESFOQUE) ── */}
