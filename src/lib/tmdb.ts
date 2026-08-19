@@ -195,7 +195,7 @@ export const tmdb = {
     }
   },
 
-  getImageUrl(path: string | null, size: 'w200' | 'w300' | 'w500' | 'original' = 'w500') {
+  getImageUrl(path: string | null, size: 'w200' | 'w300' | 'w500' | 'w780' | 'w1280' | 'original' = 'w500') {
     if (!path) return '';
     if (path.startsWith('http')) return path;
     return `https://image.tmdb.org/t/p/${size}${path}`;

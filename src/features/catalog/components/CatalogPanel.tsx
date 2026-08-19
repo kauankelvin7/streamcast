@@ -207,23 +207,44 @@ export default function CatalogPanel() {
     return accumulatedItems.filter((item: any) => item.genre_ids?.includes(selectedGenre));
   }, [accumulatedItems, selectedGenre]);
 
-  // Destaque Hero Spotlight (primeiro item em alta com backdrop)
+  // Destaque Hero Spotlight (encontra item com backdrop válido de alta qualidade)
   const spotlightItem = useMemo(() => {
     if (!accumulatedItems.length) return null;
-    return accumulatedItems.find((item: any) => item.backdrop_path && item.overview) || accumulatedItems[0];
+    return accumulatedItems.find((item: any) => item.backdrop_path && item.poster_path && item.overview && item.overview.length > 20) 
+      || accumulatedItems.find((item: any) => item.backdrop_path)
+      || accumulatedItems[0];
   }, [accumulatedItems]);
+
+  const spotlightBackdropUrl = useMemo(() => {
+    if (!spotlightItem) return null;
+    if (spotlightItem.backdrop_path) {
+      return tmdb.getImageUrl(spotlightItem.backdrop_path, 'original');
+    }
+    if (spotlightItem.poster_path) {
+      return tmdb.getImageUrl(spotlightItem.poster_path, 'original');
+    }
+    return null;
+  }, [spotlightItem]);
+
+  const spotlightPosterUrl = useMemo(() => {
+    if (!spotlightItem) return null;
+    if (spotlightItem.poster_path) {
+      return tmdb.getImageUrl(spotlightItem.poster_path, 'w500');
+    }
+    return spotlightBackdropUrl;
+  }, [spotlightItem, spotlightBackdropUrl]);
 
   const handleSelect = useCallback((item: SelectedContent) => {
     setSelected(item);
   }, []);
 
   const TABS = [
-    { key: 'trending'  as Tab, label: 'Em Alta',       icon: Flame },
-    { key: 'top_rated' as Tab, label: 'Mais Votados',  icon: Star },
+    { key: 'trending'  as Tab, label: 'Em Alta',        icon: Flame },
+    { key: 'top_rated' as Tab, label: 'Mais Votados',   icon: Star },
     { key: 'family'    as Tab, label: 'Para a Família', icon: Users },
-    { key: 'decades'   as Tab, label: 'Por Época',     icon: History },
-    { key: 'tv'        as Tab, label: 'Séries',        icon: Tv },
-    { key: 'anime'     as Tab, label: 'Anime',         icon: Sparkles },
+    { key: 'decades'   as Tab, label: 'Por Época',      icon: History },
+    { key: 'tv'        as Tab, label: 'Séries',         icon: Tv },
+    { key: 'anime'     as Tab, label: 'Anime',          icon: Sparkles },
   ];
 
   return (
@@ -236,14 +257,14 @@ export default function CatalogPanel() {
         <div style={{
           position: 'absolute', top: -160, left: '50%', transform: 'translateX(-50%)',
           width: 1100, height: 600,
-          background: 'radial-gradient(ellipse at 50% 0%, rgba(229,89,29,.18) 0%, rgba(245,130,83,.06) 40%, transparent 75%)',
+          background: 'radial-gradient(ellipse at 50% 0%, rgba(229,89,29,.2) 0%, rgba(245,130,83,.06) 40%, transparent 75%)',
           pointerEvents: 'none', zIndex: 0,
           animation: 'cp-glow-pulse 8s ease-in-out infinite',
         }} />
 
         <div style={{
-          position: 'absolute', top: 400, right: -150, width: 500, height: 500,
-          background: 'radial-gradient(circle, rgba(163,48,0,.08) 0%, transparent 70%)',
+          position: 'absolute', top: 450, right: -150, width: 500, height: 500,
+          background: 'radial-gradient(circle, rgba(163,48,0,.09) 0%, transparent 70%)',
           pointerEvents: 'none', zIndex: 0,
           animation: 'cp-mesh-float 12s ease-in-out infinite alternate',
         }} />
@@ -251,9 +272,9 @@ export default function CatalogPanel() {
         {/* ── HEADER ── */}
         <header style={{ 
           position: 'relative', zIndex: 10,
-          padding: '40px 5% 28px', 
+          padding: '36px 5% 26px', 
           borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'linear-gradient(180deg, rgba(14,14,18,0.85) 0%, transparent 100%)',
+          background: 'linear-gradient(180deg, rgba(14,14,18,0.9) 0%, transparent 100%)',
           marginBottom: '28px',
         }}>
           <div style={{ maxWidth: 1440, margin: '0 auto' }}>
@@ -284,12 +305,12 @@ export default function CatalogPanel() {
                 </div>
 
                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: '0 0 0 18px', maxWidth: 540 }}>
-                  Catálogo cinematográfico com filmes de todas as décadas, mais votados e sincronização em tempo real.
+                  Catálogo cinematográfico com capas em alta definição, filmes de todas as décadas e reprodução sem travas.
                 </p>
               </div>
 
-              {/* SearchBar */}
-              <div style={{ width: '100%', maxWidth: 440 }}>
+              {/* SearchBar com Lupa Estilizada */}
+              <div style={{ width: '100%', maxWidth: 460 }}>
                 <SearchBar onSelect={handleSelect} />
               </div>
             </div>
@@ -299,130 +320,194 @@ export default function CatalogPanel() {
         {/* ── MAIN CONTENT ── */}
         <main style={{ maxWidth: 1440, margin: '0 auto', padding: '0 5%', position: 'relative', zIndex: 1 }}>
 
-          {/* ── HERO SPOTLIGHT BANNER ── */}
+          {/* ── HERO SPOTLIGHT BANNER COM CAPAS COMPLETAS ── */}
           {spotlightItem && (
             <div style={{
               position: 'relative',
-              borderRadius: 24,
+              borderRadius: 26,
               overflow: 'hidden',
               marginBottom: 36,
               border: '1px solid rgba(255,255,255,0.08)',
               background: '#121217',
-              boxShadow: '0 24px 60px rgba(0,0,0,0.6)',
-              minHeight: 320,
+              boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 32px rgba(229,89,29,0.08)',
+              minHeight: 340,
               display: 'flex',
-              alignItems: 'flex-end',
+              alignItems: 'center',
             }}>
-              {/* Backdrop image */}
+              {/* Full HD Backdrop banner */}
+              {spotlightBackdropUrl && (
+                <img
+                  src={spotlightBackdropUrl}
+                  alt={spotlightItem.title ?? spotlightItem.name}
+                  crossOrigin="anonymous"
+                  style={{
+                    position: 'absolute',
+                    inset: 0,
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    objectPosition: 'center 20%',
+                    filter: 'brightness(0.68) saturate(1.1)',
+                  }}
+                />
+              )}
+
+              {/* Cinematic Vignette Gradient Overlay */}
               <div style={{
                 position: 'absolute',
                 inset: 0,
-                backgroundImage: `url(https://image.tmdb.org/t/p/original${spotlightItem.backdrop_path || spotlightItem.poster_path})`,
-                backgroundSize: 'cover',
-                backgroundPosition: 'center 25%',
-                filter: 'brightness(0.65)',
+                background: 'linear-gradient(90deg, rgba(8,8,11,0.96) 0%, rgba(8,8,11,0.85) 45%, rgba(8,8,11,0.3) 100%), linear-gradient(0deg, rgba(8,8,11,0.98) 0%, transparent 60%)',
               }} />
 
-              {/* Gradient Vignette */}
+              {/* Spotlight Content Container */}
               <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(90deg, rgba(8,8,11,0.96) 0%, rgba(8,8,11,0.7) 45%, rgba(8,8,11,0.2) 100%), linear-gradient(0deg, rgba(8,8,11,0.98) 0%, transparent 60%)',
-              }} />
+                position: 'relative',
+                zIndex: 10,
+                padding: '36px 40px',
+                width: '100%',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 32,
+              }}>
+                {/* Left Text and Actions */}
+                <div style={{ maxWidth: 640 }}>
+                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 999, background: 'rgba(229,89,29,0.25)', border: '1px solid rgba(229,89,29,0.45)', color: '#F58253', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                    <Flame size={13} />
+                    Destaque da Semana
+                  </div>
 
-              {/* Spotlight Content */}
-              <div style={{ position: 'relative', zIndex: 10, padding: '36px 40px', maxWidth: 680 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '4px 12px', borderRadius: 999, background: 'rgba(229,89,29,0.25)', border: '1px solid rgba(229,89,29,0.4)', color: '#F58253', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                  <Flame size={13} />
-                  Destaque da Semana
-                </div>
-
-                <h2 style={{
-                  fontFamily: "'Syne', sans-serif",
-                  fontSize: 32,
-                  fontWeight: 800,
-                  color: '#fff',
-                  lineHeight: 1.15,
-                  margin: '0 0 12px',
-                  letterSpacing: '-0.02em',
-                }}>
-                  {spotlightItem.title ?? spotlightItem.name}
-                </h2>
-
-                {spotlightItem.overview && (
-                  <p style={{
-                    fontSize: 13,
-                    color: 'rgba(255,255,255,0.7)',
-                    lineHeight: 1.6,
-                    margin: '0 0 20px',
-                    display: '-webkit-box',
-                    WebkitLineClamp: 3,
-                    WebkitBoxOrient: 'vertical',
-                    overflow: 'hidden',
+                  <h2 style={{
+                    fontFamily: "'Syne', sans-serif",
+                    fontSize: 32,
+                    fontWeight: 800,
+                    color: '#fff',
+                    lineHeight: 1.15,
+                    margin: '0 0 12px',
+                    letterSpacing: '-0.02em',
                   }}>
-                    {spotlightItem.overview}
-                  </p>
-                )}
+                    {spotlightItem.title ?? spotlightItem.name}
+                  </h2>
 
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  <button
-                    onClick={() => handleSelect({
-                      tmdbId: spotlightItem.id,
-                      type: tab === 'tv' ? 'tv' : tab === 'anime' ? 'anime' : 'movie',
-                      title: spotlightItem.title ?? spotlightItem.name,
-                      poster: spotlightItem.poster_path ? `https://image.tmdb.org/t/p/w500${spotlightItem.poster_path}` : null,
-                      season: tab === 'tv' ? 1 : undefined,
-                      episode: tab === 'tv' ? 1 : undefined,
-                    })}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 24px',
-                      borderRadius: 14,
-                      background: 'linear-gradient(135deg, #F58253, #E5591D)',
-                      border: 'none',
-                      color: '#fff',
-                      fontSize: 14,
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      boxShadow: '0 8px 24px rgba(229,89,29,0.4)',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <Play size={16} fill="#fff" />
-                    Assistir Agora
-                  </button>
+                  {spotlightItem.overview && (
+                    <p style={{
+                      fontSize: 13.5,
+                      color: 'rgba(255,255,255,0.75)',
+                      lineHeight: 1.6,
+                      margin: '0 0 22px',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 3,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                    }}>
+                      {spotlightItem.overview}
+                    </p>
+                  )}
 
-                  <button
-                    onClick={() => handleSelect({
-                      tmdbId: spotlightItem.id,
-                      type: tab === 'tv' ? 'tv' : tab === 'anime' ? 'anime' : 'movie',
-                      title: spotlightItem.title ?? spotlightItem.name,
-                      poster: spotlightItem.poster_path ? `https://image.tmdb.org/t/p/w500${spotlightItem.poster_path}` : null,
-                      season: tab === 'tv' ? 1 : undefined,
-                      episode: tab === 'tv' ? 1 : undefined,
-                    })}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '12px 20px',
-                      borderRadius: 14,
-                      background: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.15)',
-                      color: '#fff',
-                      fontSize: 14,
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      backdropFilter: 'blur(10px)',
-                      transition: 'all 0.2s',
-                    }}
-                  >
-                    <Share2 size={15} />
-                    Sincronizar
-                  </button>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <button
+                      onClick={() => handleSelect({
+                        tmdbId: spotlightItem.id,
+                        type: tab === 'tv' ? 'tv' : tab === 'anime' ? 'anime' : 'movie',
+                        title: spotlightItem.title ?? spotlightItem.name,
+                        poster: spotlightPosterUrl,
+                        season: tab === 'tv' ? 1 : undefined,
+                        episode: tab === 'tv' ? 1 : undefined,
+                      })}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '13px 26px',
+                        borderRadius: 14,
+                        background: 'linear-gradient(135deg, #F58253, #E5591D)',
+                        border: 'none',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 8px 28px rgba(229,89,29,0.45)',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <Play size={16} fill="#fff" />
+                      Assistir Agora
+                    </button>
+
+                    <button
+                      onClick={() => handleSelect({
+                        tmdbId: spotlightItem.id,
+                        type: tab === 'tv' ? 'tv' : tab === 'anime' ? 'anime' : 'movie',
+                        title: spotlightItem.title ?? spotlightItem.name,
+                        poster: spotlightPosterUrl,
+                        season: tab === 'tv' ? 1 : undefined,
+                        episode: tab === 'tv' ? 1 : undefined,
+                      })}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '13px 22px',
+                        borderRadius: 14,
+                        background: 'rgba(255,255,255,0.08)',
+                        border: '1px solid rgba(255,255,255,0.18)',
+                        color: '#fff',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        backdropFilter: 'blur(10px)',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <Share2 size={15} />
+                      Sincronizar
+                    </button>
+
+                    {spotlightItem.vote_average && Number(spotlightItem.vote_average) > 0 && (
+                      <span style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        padding: '8px 12px',
+                        borderRadius: 12,
+                        background: 'rgba(0,0,0,0.5)',
+                        border: '1px solid rgba(255,255,255,0.12)',
+                        color: '#FFD700',
+                        fontSize: 13,
+                        fontWeight: 700,
+                      }}>
+                        <Star size={13} fill="#FFD700" color="#FFD700" />
+                        {Number(spotlightItem.vote_average).toFixed(1)}
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* Right 3D Poster Banner Card */}
+                {spotlightPosterUrl && (
+                  <div style={{
+                    display: 'none',
+                    flexShrink: 0,
+                    width: 175,
+                    aspectRatio: '2/3',
+                    borderRadius: 18,
+                    overflow: 'hidden',
+                    border: '2px solid rgba(255,255,255,0.18)',
+                    boxShadow: '0 20px 48px rgba(0,0,0,0.8), 0 0 32px rgba(229,89,29,0.3)',
+                    transform: 'perspective(800px) rotateY(-8deg)',
+                    background: '#131317',
+                  }}
+                  className="spotlight-poster-card"
+                  >
+                    <img
+                      src={spotlightPosterUrl}
+                      alt={spotlightItem.title ?? spotlightItem.name}
+                      crossOrigin="anonymous"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                )}
+                <style>{`@media (min-width: 900px) { .spotlight-poster-card { display: block !important; } }`}</style>
               </div>
             </div>
           )}
@@ -491,11 +576,11 @@ export default function CatalogPanel() {
           {/* ── COUNTER & STATUS ── */}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
             <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
-              {isLoading && page === 1 ? 'Buscando catálogo no TMDB...' : `${filteredItems.length} títulos encontrados nesta seleção`}
+              {isLoading && page === 1 ? 'Buscando catálogo no TMDB...' : `${filteredItems.length} títulos com capas completas disponíveis`}
             </span>
           </div>
 
-          {/* ── CARDS GRID ── */}
+          {/* ── CARDS GRID (COM BANNERS E CAPAS EM ALTA DEFINIÇÃO) ── */}
           <div style={{ 
             display: 'grid', 
             gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', 
@@ -517,6 +602,10 @@ export default function CatalogPanel() {
             ) : filteredItems.length > 0 ? (
               filteredItems.map((item: any, i: number) => {
                 const isTv = tab === 'tv' || tab === 'anime' || Boolean(item.first_air_date);
+                const itemPoster = item.poster_path 
+                  ? tmdb.getImageUrl(item.poster_path, 'w500') 
+                  : (item.backdrop_path ? tmdb.getImageUrl(item.backdrop_path, 'w780') : null);
+
                 return (
                   <ContentCard 
                     key={`${item.id}-${i}`}
@@ -527,7 +616,7 @@ export default function CatalogPanel() {
                       tmdbId: item.id, 
                       type: isTv ? 'tv' : 'movie', 
                       title: item.title ?? item.name ?? 'Sem título', 
-                      poster: item.poster_path ? `https://image.tmdb.org/t/p/w500${item.poster_path}` : null, 
+                      poster: itemPoster, 
                       season: isTv ? 1 : undefined, 
                       episode: isTv ? 1 : undefined,
                     })} 
