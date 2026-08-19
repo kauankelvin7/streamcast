@@ -1,15 +1,15 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { tmdb } from '@lib/tmdb';
 import SearchBar from './SearchBar';
-import ContentCard from './ContentCard';
+import ContentRow from './ContentRow';
 import SyncModal from './SyncModal';
 import YoutubeModal from './YoutubeModal';
 import EmbedCodePanel from '@features/admin/components/EmbedCodePanel';
-import { Tv, Film, Sparkles, Youtube, Flame, Star, Users, History, Play, Share2, Plus } from 'lucide-react';
+import { Tv, Film, Sparkles, Youtube, Flame, Star, Users, History, Play, Share2 } from 'lucide-react';
 
-type Tab = 'trending' | 'top_rated' | 'family' | 'decades' | 'tv' | 'anime';
+type Tab = 'home' | 'top_rated' | 'family' | 'decades' | 'tv' | 'anime';
 
 export interface SelectedContent {
   tmdbId: number | string;
@@ -21,32 +21,10 @@ export interface SelectedContent {
   url?: string;
 }
 
-const GENRE_FILTERS: { id: number | null; label: string }[] = [
-  { id: null,   label: 'Todos os Gêneros' },
-  { id: 28,     label: 'Ação' },
-  { id: 12,     label: 'Aventura' },
-  { id: 35,     label: 'Comédia' },
-  { id: 18,     label: 'Drama' },
-  { id: 27,     label: 'Terror' },
-  { id: 878,    label: 'Ficção Científica' },
-  { id: 16,     label: 'Animação' },
-  { id: 10751,  label: 'Família' },
-  { id: 10749,  label: 'Romance' },
-  { id: 53,     label: 'Suspense' },
-];
-
-const DECADE_FILTERS = [
-  { label: '2020 - 2026', start: 2020, end: 2026 },
-  { label: 'Anos 2010',   start: 2010, end: 2019 },
-  { label: 'Anos 2000',   start: 2000, end: 2009 },
-  { label: 'Anos 90',     start: 1990, end: 1999 },
-  { label: 'Clássicos (70/80s)', start: 1970, end: 1989 },
-];
-
 const PANEL_STYLES = `
   @keyframes cp-glow-pulse {
     0%, 100% { opacity: .45; transform: scale(1); }
-    50%      { opacity: .75; transform: scale(1.05); }
+    50%      { opacity: .75; transform: scale(1.04); }
   }
   @keyframes cp-mesh-float {
     0%, 100% { transform: translate(0, 0) rotate(0deg); }
@@ -65,7 +43,7 @@ const PANEL_STYLES = `
     cursor: pointer;
     border: 1px solid transparent;
     background: transparent;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255,255,255,0.55);
     transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
     outline: none;
     white-space: nowrap;
@@ -78,36 +56,9 @@ const PANEL_STYLES = `
   .cp-tab.active {
     font-weight: 600;
     color: #fff;
-    background: rgba(229,89,29,0.15);
+    background: rgba(229,89,29,0.16);
     border-color: rgba(229,89,29,0.4);
-    box-shadow: 0 0 24px rgba(229,89,29,0.18);
-  }
-
-  .cp-pill {
-    padding: 7px 15px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 500;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer;
-    border: 1px solid rgba(255,255,255,0.06);
-    background: rgba(255,255,255,0.03);
-    color: rgba(255,255,255,0.55);
-    transition: all 0.2s ease;
-    outline: none;
-    white-space: nowrap;
-  }
-  .cp-pill:hover {
-    color: #fff;
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.15);
-  }
-  .cp-pill.active {
-    color: #F58253;
-    background: rgba(229,89,29,0.12);
-    border-color: rgba(229,89,29,0.4);
-    font-weight: 600;
-    box-shadow: 0 0 16px rgba(229,89,29,0.1);
+    box-shadow: 0 0 24px rgba(229,89,29,0.2);
   }
 
   .cp-yt-btn {
@@ -128,123 +79,97 @@ const PANEL_STYLES = `
     color: #fff;
     border-color: rgba(229,89,29,0.6);
   }
-
-  .cp-load-more {
-    display: inline-flex; align-items: center; gap: 10px;
-    padding: 14px 32px; border-radius: 14px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.1);
-    color: #fff; font-size: 14px; font-weight: 600;
-    font-family: 'Inter', sans-serif;
-    cursor: pointer; transition: all 0.25s ease;
-  }
-  .cp-load-more:hover {
-    background: rgba(229,89,29,0.15);
-    border-color: rgba(229,89,29,0.4);
-    color: #F58253;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5), 0 0 24px rgba(229,89,29,0.15);
-  }
 `;
 
 export default function CatalogPanel() {
-  const [tab, setTab] = useState<Tab>('trending');
-  const [selectedGenre, setSelectedGenre] = useState<number | null>(null);
-  const [selectedDecade, setSelectedDecade] = useState(DECADE_FILTERS[0]);
-  const [page, setPage] = useState(1);
-  const [accumulatedItems, setAccumulatedItems] = useState<any[]>([]);
+  const [tab, setTab] = useState<Tab>('home');
   const [selected, setSelected] = useState<SelectedContent | null>(null);
   const [showYoutubeModal, setShowYoutubeModal] = useState(false);
 
-  // Reset paginação ao trocar de aba ou filtro de época
-  useEffect(() => {
-    setPage(1);
-    setAccumulatedItems([]);
-  }, [tab, selectedDecade]);
-
-  // Query do TMDB baseada na aba ativa e página
-  const { data: tmdbData, isLoading } = useQuery({
-    queryKey: ['catalog', tab, tab === 'decades' ? selectedDecade.label : null, page],
-    queryFn: async () => {
-      switch (tab) {
-        case 'trending':
-          return tmdb.getTrending('movie', 'week', page);
-        case 'top_rated':
-          return tmdb.getTopRated('movie', page);
-        case 'family':
-          return tmdb.getFamilyMovies(page);
-        case 'decades':
-          return tmdb.getByDecade(selectedDecade.start, selectedDecade.end, page);
-        case 'tv':
-          return tmdb.getTrending('tv', 'week', page);
-        case 'anime':
-          return tmdb.getAnimeTrending(page);
-        default:
-          return tmdb.getTrending('movie', 'week', page);
-      }
-    },
+  // Queries para as diferentes seções deslizantes
+  const { data: trendingMovies, isLoading: loadingTrending } = useQuery({
+    queryKey: ['catalog', 'trending'],
+    queryFn: () => tmdb.getTrending('movie', 'week'),
   });
 
-  // Acumula itens conforme paginação
-  useEffect(() => {
-    if (tmdbData?.results) {
-      if (page === 1) {
-        setAccumulatedItems(tmdbData.results);
-      } else {
-        setAccumulatedItems(prev => {
-          const existingIds = new Set(prev.map(i => i.id));
-          const newItems = tmdbData.results.filter((i: any) => !existingIds.has(i.id));
-          return [...prev, ...newItems];
-        });
-      }
-    }
-  }, [tmdbData, page]);
+  const { data: topRatedMovies, isLoading: loadingTopRated } = useQuery({
+    queryKey: ['catalog', 'top_rated'],
+    queryFn: () => tmdb.getTopRated('movie', 1),
+  });
 
-  // Filtragem dinâmica por gênero
-  const filteredItems = useMemo(() => {
-    if (!accumulatedItems.length) return [];
-    if (!selectedGenre) return accumulatedItems;
-    return accumulatedItems.filter((item: any) => item.genre_ids?.includes(selectedGenre));
-  }, [accumulatedItems, selectedGenre]);
+  const { data: familyMovies, isLoading: loadingFamily } = useQuery({
+    queryKey: ['catalog', 'family'],
+    queryFn: () => tmdb.getFamilyMovies(1),
+  });
 
-  // Destaque Hero Spotlight (encontra item com backdrop válido de alta qualidade)
+  const { data: recentDecade, isLoading: loadingRecentDecade } = useQuery({
+    queryKey: ['catalog', 'decades', '2020'],
+    queryFn: () => tmdb.getByDecade(2020, 2026, 1),
+  });
+
+  const { data: classicDecade, isLoading: loadingClassicDecade } = useQuery({
+    queryKey: ['catalog', 'decades', 'classics'],
+    queryFn: () => tmdb.getByDecade(1990, 2009, 1),
+  });
+
+  const { data: tvSeries, isLoading: loadingTv } = useQuery({
+    queryKey: ['catalog', 'tv'],
+    queryFn: () => tmdb.getTrending('tv', 'week', 1),
+  });
+
+  const { data: animeData, isLoading: loadingAnime } = useQuery({
+    queryKey: ['catalog', 'anime'],
+    queryFn: () => tmdb.getAnimeTrending(1),
+  });
+
+  // Spotlight do Destaque da Semana
   const spotlightItem = useMemo(() => {
-    if (!accumulatedItems.length) return null;
-    return accumulatedItems.find((item: any) => item.backdrop_path && item.poster_path && item.overview && item.overview.length > 20) 
-      || accumulatedItems.find((item: any) => item.backdrop_path)
-      || accumulatedItems[0];
-  }, [accumulatedItems]);
+    const list = trendingMovies?.results || [];
+    return list.find((item: any) => item.backdrop_path && item.poster_path && item.overview && item.overview.length > 20)
+      || list[0]
+      || null;
+  }, [trendingMovies]);
 
   const spotlightBackdropUrl = useMemo(() => {
     if (!spotlightItem) return null;
-    if (spotlightItem.backdrop_path) {
-      return tmdb.getImageUrl(spotlightItem.backdrop_path, 'original');
-    }
-    if (spotlightItem.poster_path) {
-      return tmdb.getImageUrl(spotlightItem.poster_path, 'original');
-    }
-    return null;
+    return spotlightItem.backdrop_path 
+      ? tmdb.getImageUrl(spotlightItem.backdrop_path, 'original') 
+      : (spotlightItem.poster_path ? tmdb.getImageUrl(spotlightItem.poster_path, 'original') : null);
   }, [spotlightItem]);
 
   const spotlightPosterUrl = useMemo(() => {
     if (!spotlightItem) return null;
-    if (spotlightItem.poster_path) {
-      return tmdb.getImageUrl(spotlightItem.poster_path, 'w500');
-    }
-    return spotlightBackdropUrl;
+    return spotlightItem.poster_path 
+      ? tmdb.getImageUrl(spotlightItem.poster_path, 'w500') 
+      : spotlightBackdropUrl;
   }, [spotlightItem, spotlightBackdropUrl]);
 
   const handleSelect = useCallback((item: SelectedContent) => {
     setSelected(item);
   }, []);
 
+  const handleItemClick = useCallback((item: any, isTv: boolean = false) => {
+    const poster = item.poster_path 
+      ? tmdb.getImageUrl(item.poster_path, 'w500') 
+      : (item.backdrop_path ? tmdb.getImageUrl(item.backdrop_path, 'w780') : null);
+
+    handleSelect({
+      tmdbId: item.id,
+      type: isTv ? 'tv' : 'movie',
+      title: item.title ?? item.name ?? 'Sem título',
+      poster,
+      season: isTv ? 1 : undefined,
+      episode: isTv ? 1 : undefined,
+    });
+  }, [handleSelect]);
+
   const TABS = [
-    { key: 'trending'  as Tab, label: 'Em Alta',        icon: Flame },
-    { key: 'top_rated' as Tab, label: 'Mais Votados',   icon: Star },
-    { key: 'family'    as Tab, label: 'Para a Família', icon: Users },
-    { key: 'decades'   as Tab, label: 'Por Época',      icon: History },
-    { key: 'tv'        as Tab, label: 'Séries',         icon: Tv },
-    { key: 'anime'     as Tab, label: 'Anime',          icon: Sparkles },
+    { key: 'home'      as Tab, label: 'Catálogo Completo', icon: Flame },
+    { key: 'top_rated' as Tab, label: 'Mais Votados',      icon: Star },
+    { key: 'family'    as Tab, label: 'Para a Família',    icon: Users },
+    { key: 'decades'   as Tab, label: 'Por Época',         icon: History },
+    { key: 'tv'        as Tab, label: 'Séries',            icon: Tv },
+    { key: 'anime'     as Tab, label: 'Anime',             icon: Sparkles },
   ];
 
   return (
@@ -272,9 +197,9 @@ export default function CatalogPanel() {
         {/* ── HEADER ── */}
         <header style={{ 
           position: 'relative', zIndex: 10,
-          padding: '36px 5% 26px', 
+          padding: '36px 5% 24px', 
           borderBottom: '1px solid rgba(255,255,255,0.06)',
-          background: 'linear-gradient(180deg, rgba(14,14,18,0.9) 0%, transparent 100%)',
+          background: 'linear-gradient(180deg, rgba(14,14,18,0.92) 0%, transparent 100%)',
           marginBottom: '28px',
         }}>
           <div style={{ maxWidth: 1440, margin: '0 auto' }}>
@@ -305,11 +230,11 @@ export default function CatalogPanel() {
                 </div>
 
                 <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: 13, margin: '0 0 0 18px', maxWidth: 540 }}>
-                  Catálogo cinematográfico com capas em alta definição, filmes de todas as décadas e reprodução sem travas.
+                  Catálogo deslizante imersivo com capas em alta definição, desfoque dinâmico e sincronização em tempo real.
                 </p>
               </div>
 
-              {/* SearchBar com Lupa Estilizada */}
+              {/* SearchBar */}
               <div style={{ width: '100%', maxWidth: 460 }}>
                 <SearchBar onSelect={handleSelect} />
               </div>
@@ -318,209 +243,207 @@ export default function CatalogPanel() {
         </header>
 
         {/* ── MAIN CONTENT ── */}
-        <main style={{ maxWidth: 1440, margin: '0 auto', padding: '0 5%', position: 'relative', zIndex: 1 }}>
+        <main style={{ maxWidth: 1440, margin: '0 auto', position: 'relative', zIndex: 1 }}>
 
           {/* ── HERO SPOTLIGHT BANNER COM CAPAS COMPLETAS ── */}
           {spotlightItem && (
-            <div style={{
-              position: 'relative',
-              borderRadius: 26,
-              overflow: 'hidden',
-              marginBottom: 36,
-              border: '1px solid rgba(255,255,255,0.08)',
-              background: '#121217',
-              boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 32px rgba(229,89,29,0.08)',
-              minHeight: 340,
-              display: 'flex',
-              alignItems: 'center',
-            }}>
-              {/* Full HD Backdrop banner */}
-              {spotlightBackdropUrl && (
-                <img
-                  src={spotlightBackdropUrl}
-                  alt={spotlightItem.title ?? spotlightItem.name}
-                  crossOrigin="anonymous"
-                  style={{
-                    position: 'absolute',
-                    inset: 0,
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    objectPosition: 'center 20%',
-                    filter: 'brightness(0.68) saturate(1.1)',
-                  }}
-                />
-              )}
-
-              {/* Cinematic Vignette Gradient Overlay */}
-              <div style={{
-                position: 'absolute',
-                inset: 0,
-                background: 'linear-gradient(90deg, rgba(8,8,11,0.96) 0%, rgba(8,8,11,0.85) 45%, rgba(8,8,11,0.3) 100%), linear-gradient(0deg, rgba(8,8,11,0.98) 0%, transparent 60%)',
-              }} />
-
-              {/* Spotlight Content Container */}
+            <div style={{ padding: '0 5%' }}>
               <div style={{
                 position: 'relative',
-                zIndex: 10,
-                padding: '36px 40px',
-                width: '100%',
+                borderRadius: 26,
+                overflow: 'hidden',
+                marginBottom: 40,
+                border: '1px solid rgba(255,255,255,0.08)',
+                background: '#121217',
+                boxShadow: '0 24px 64px rgba(0,0,0,0.7), 0 0 32px rgba(229,89,29,0.08)',
+                minHeight: 340,
                 display: 'flex',
-                justifyContent: 'space-between',
                 alignItems: 'center',
-                gap: 32,
               }}>
-                {/* Left Text and Actions */}
-                <div style={{ maxWidth: 640 }}>
-                  <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 999, background: 'rgba(229,89,29,0.25)', border: '1px solid rgba(229,89,29,0.45)', color: '#F58253', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
-                    <Flame size={13} />
-                    Destaque da Semana
-                  </div>
-
-                  <h2 style={{
-                    fontFamily: "'Syne', sans-serif",
-                    fontSize: 32,
-                    fontWeight: 800,
-                    color: '#fff',
-                    lineHeight: 1.15,
-                    margin: '0 0 12px',
-                    letterSpacing: '-0.02em',
-                  }}>
-                    {spotlightItem.title ?? spotlightItem.name}
-                  </h2>
-
-                  {spotlightItem.overview && (
-                    <p style={{
-                      fontSize: 13.5,
-                      color: 'rgba(255,255,255,0.75)',
-                      lineHeight: 1.6,
-                      margin: '0 0 22px',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 3,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}>
-                      {spotlightItem.overview}
-                    </p>
-                  )}
-
-                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                    <button
-                      onClick={() => handleSelect({
-                        tmdbId: spotlightItem.id,
-                        type: tab === 'tv' ? 'tv' : tab === 'anime' ? 'anime' : 'movie',
-                        title: spotlightItem.title ?? spotlightItem.name,
-                        poster: spotlightPosterUrl,
-                        season: tab === 'tv' ? 1 : undefined,
-                        episode: tab === 'tv' ? 1 : undefined,
-                      })}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '13px 26px',
-                        borderRadius: 14,
-                        background: 'linear-gradient(135deg, #F58253, #E5591D)',
-                        border: 'none',
-                        color: '#fff',
-                        fontSize: 14,
-                        fontWeight: 700,
-                        cursor: 'pointer',
-                        boxShadow: '0 8px 28px rgba(229,89,29,0.45)',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <Play size={16} fill="#fff" />
-                      Assistir Agora
-                    </button>
-
-                    <button
-                      onClick={() => handleSelect({
-                        tmdbId: spotlightItem.id,
-                        type: tab === 'tv' ? 'tv' : tab === 'anime' ? 'anime' : 'movie',
-                        title: spotlightItem.title ?? spotlightItem.name,
-                        poster: spotlightPosterUrl,
-                        season: tab === 'tv' ? 1 : undefined,
-                        episode: tab === 'tv' ? 1 : undefined,
-                      })}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 8,
-                        padding: '13px 22px',
-                        borderRadius: 14,
-                        background: 'rgba(255,255,255,0.08)',
-                        border: '1px solid rgba(255,255,255,0.18)',
-                        color: '#fff',
-                        fontSize: 14,
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        backdropFilter: 'blur(10px)',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <Share2 size={15} />
-                      Sincronizar
-                    </button>
-
-                    {spotlightItem.vote_average && Number(spotlightItem.vote_average) > 0 && (
-                      <span style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        padding: '8px 12px',
-                        borderRadius: 12,
-                        background: 'rgba(0,0,0,0.5)',
-                        border: '1px solid rgba(255,255,255,0.12)',
-                        color: '#FFD700',
-                        fontSize: 13,
-                        fontWeight: 700,
-                      }}>
-                        <Star size={13} fill="#FFD700" color="#FFD700" />
-                        {Number(spotlightItem.vote_average).toFixed(1)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right 3D Poster Banner Card */}
-                {spotlightPosterUrl && (
-                  <div style={{
-                    display: 'none',
-                    flexShrink: 0,
-                    width: 175,
-                    aspectRatio: '2/3',
-                    borderRadius: 18,
-                    overflow: 'hidden',
-                    border: '2px solid rgba(255,255,255,0.18)',
-                    boxShadow: '0 20px 48px rgba(0,0,0,0.8), 0 0 32px rgba(229,89,29,0.3)',
-                    transform: 'perspective(800px) rotateY(-8deg)',
-                    background: '#131317',
-                  }}
-                  className="spotlight-poster-card"
-                  >
-                    <img
-                      src={spotlightPosterUrl}
-                      alt={spotlightItem.title ?? spotlightItem.name}
-                      crossOrigin="anonymous"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
+                {/* Full HD Backdrop banner */}
+                {spotlightBackdropUrl && (
+                  <img
+                    src={spotlightBackdropUrl}
+                    alt={spotlightItem.title ?? spotlightItem.name}
+                    crossOrigin="anonymous"
+                    style={{
+                      position: 'absolute',
+                      inset: 0,
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      objectPosition: 'center 20%',
+                      filter: 'brightness(0.68) saturate(1.1)',
+                    }}
+                  />
                 )}
-                <style>{`@media (min-width: 900px) { .spotlight-poster-card { display: block !important; } }`}</style>
+
+                {/* Cinematic Vignette Gradient Overlay */}
+                <div style={{
+                  position: 'absolute',
+                  inset: 0,
+                  background: 'linear-gradient(90deg, rgba(8,8,11,0.96) 0%, rgba(8,8,11,0.85) 45%, rgba(8,8,11,0.3) 100%), linear-gradient(0deg, rgba(8,8,11,0.98) 0%, transparent 60%)',
+                }} />
+
+                {/* Spotlight Content Container */}
+                <div style={{
+                  position: 'relative',
+                  zIndex: 10,
+                  padding: '36px 40px',
+                  width: '100%',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 32,
+                }}>
+                  {/* Left Text and Actions */}
+                  <div style={{ maxWidth: 640 }}>
+                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 13px', borderRadius: 999, background: 'rgba(229,89,29,0.25)', border: '1px solid rgba(229,89,29,0.45)', color: '#F58253', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 12 }}>
+                      <Flame size={13} />
+                      Destaque da Semana
+                    </div>
+
+                    <h2 style={{
+                      fontFamily: "'Syne', sans-serif",
+                      fontSize: 32,
+                      fontWeight: 800,
+                      color: '#fff',
+                      lineHeight: 1.15,
+                      margin: '0 0 12px',
+                      letterSpacing: '-0.02em',
+                    }}>
+                      {spotlightItem.title ?? spotlightItem.name}
+                    </h2>
+
+                    {spotlightItem.overview && (
+                      <p style={{
+                        fontSize: 13.5,
+                        color: 'rgba(255,255,255,0.75)',
+                        lineHeight: 1.6,
+                        margin: '0 0 22px',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}>
+                        {spotlightItem.overview}
+                      </p>
+                    )}
+
+                    <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+                      <button
+                        onClick={() => handleSelect({
+                          tmdbId: spotlightItem.id,
+                          type: 'movie',
+                          title: spotlightItem.title ?? spotlightItem.name,
+                          poster: spotlightPosterUrl,
+                        })}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '13px 26px',
+                          borderRadius: 14,
+                          background: 'linear-gradient(135deg, #F58253, #E5591D)',
+                          border: 'none',
+                          color: '#fff',
+                          fontSize: 14,
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          boxShadow: '0 8px 28px rgba(229,89,29,0.45)',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <Play size={16} fill="#fff" />
+                        Assistir Agora
+                      </button>
+
+                      <button
+                        onClick={() => handleSelect({
+                          tmdbId: spotlightItem.id,
+                          type: 'movie',
+                          title: spotlightItem.title ?? spotlightItem.name,
+                          poster: spotlightPosterUrl,
+                        })}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 8,
+                          padding: '13px 22px',
+                          borderRadius: 14,
+                          background: 'rgba(255,255,255,0.08)',
+                          border: '1px solid rgba(255,255,255,0.18)',
+                          color: '#fff',
+                          fontSize: 14,
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                          backdropFilter: 'blur(10px)',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <Share2 size={15} />
+                        Sincronizar
+                      </button>
+
+                      {spotlightItem.vote_average && Number(spotlightItem.vote_average) > 0 && (
+                        <span style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 5,
+                          padding: '8px 12px',
+                          borderRadius: 12,
+                          background: 'rgba(0,0,0,0.5)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          color: '#FFD700',
+                          fontSize: 13,
+                          fontWeight: 700,
+                        }}>
+                          <Star size={13} fill="#FFD700" color="#FFD700" />
+                          {Number(spotlightItem.vote_average).toFixed(1)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right 3D Poster Banner Card */}
+                  {spotlightPosterUrl && (
+                    <div style={{
+                      display: 'none',
+                      flexShrink: 0,
+                      width: 175,
+                      aspectRatio: '2/3',
+                      borderRadius: 18,
+                      overflow: 'hidden',
+                      border: '2px solid rgba(255,255,255,0.18)',
+                      boxShadow: '0 20px 48px rgba(0,0,0,0.8), 0 0 32px rgba(229,89,29,0.3)',
+                      transform: 'perspective(800px) rotateY(-8deg)',
+                      background: '#131317',
+                    }}
+                    className="spotlight-poster-card"
+                    >
+                      <img
+                        src={spotlightPosterUrl}
+                        alt={spotlightItem.title ?? spotlightItem.name}
+                        crossOrigin="anonymous"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
+                    </div>
+                  )}
+                  <style>{`@media (min-width: 900px) { .spotlight-poster-card { display: block !important; } }`}</style>
+                </div>
               </div>
             </div>
           )}
 
           {/* ── TABS BAR ── */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 16 }}>
+          <div style={{ padding: '0 5%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32, flexWrap: 'wrap', gap: 16 }}>
             <div style={{ display: 'flex', gap: 6, background: 'rgba(255,255,255,0.03)', padding: 5, borderRadius: 999, border: '1px solid rgba(255,255,255,0.06)', overflowX: 'auto', maxWidth: '100%' }}>
               {TABS.map(({ key, label, icon: Icon }) => {
                 const isActive = tab === key;
                 return (
                   <button
                     key={key}
-                    onClick={() => { setTab(key); setSelectedGenre(null); }}
+                    onClick={() => setTab(key)}
                     className={`cp-tab${isActive ? ' active' : ''}`}
                   >
                     <Icon size={15} style={{ color: isActive ? '#F58253' : 'currentColor' }} />
@@ -539,124 +462,106 @@ export default function CatalogPanel() {
             </button>
           </div>
 
-          {/* ── DECADE FILTERS (quando na aba Por Época) ── */}
-          {tab === 'decades' && (
-            <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 16, scrollbarWidth: 'none' }}>
-              {DECADE_FILTERS.map((decade) => {
-                const isActive = selectedDecade.label === decade.label;
-                return (
-                  <button
-                    key={decade.label}
-                    onClick={() => setSelectedDecade(decade)}
-                    className={`cp-pill${isActive ? ' active' : ''}`}
-                  >
-                    {decade.label}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          {/* ── SEÇÕES DESLIZANTES DO CATÁLOGO (SLIDING CAROUSELS COM DESFOQUE) ── */}
+          <div style={{ marginBottom: 60 }}>
+            
+            {/* 1. Em Alta no Cinema */}
+            {(tab === 'home' || tab === 'top_rated') && (
+              <ContentRow
+                title="Em Alta Nesta Semana"
+                subtitle="Os lançamentos e filmes mais assistidos do momento"
+                icon={Flame}
+                items={trendingMovies?.results || []}
+                isLoading={loadingTrending}
+                type="movie"
+                onItemClick={(item) => handleItemClick(item, false)}
+              />
+            )}
 
-          {/* ── GENRE FILTERS ── */}
-          <div style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 12, marginBottom: 24, scrollbarWidth: 'none' }}>
-            {GENRE_FILTERS.map((genre) => {
-              const isActive = selectedGenre === genre.id;
-              return (
-                <button
-                  key={genre.label}
-                  onClick={() => setSelectedGenre(genre.id)}
-                  className={`cp-pill${isActive ? ' active' : ''}`}
-                >
-                  {genre.label}
-                </button>
-              );
-            })}
-          </div>
+            {/* 2. Mais Votados de Todos os Tempos */}
+            {(tab === 'home' || tab === 'top_rated') && (
+              <ContentRow
+                title="Mais Votados & Aclamados"
+                subtitle="Obras-primas com as maiores notas do cinema mundial"
+                icon={Star}
+                items={topRatedMovies?.results || []}
+                isLoading={loadingTopRated}
+                type="movie"
+                onItemClick={(item) => handleItemClick(item, false)}
+              />
+            )}
 
-          {/* ── COUNTER & STATUS ── */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-            <span style={{ fontSize: 13, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
-              {isLoading && page === 1 ? 'Buscando catálogo no TMDB...' : `${filteredItems.length} títulos com capas completas disponíveis`}
-            </span>
-          </div>
+            {/* 3. Para a Família & Animações */}
+            {(tab === 'home' || tab === 'family') && (
+              <ContentRow
+                title="Sessão Família & Animações"
+                subtitle="Diversão garantida para assistir com toda a família"
+                icon={Users}
+                items={familyMovies?.results || []}
+                isLoading={loadingFamily}
+                type="movie"
+                onItemClick={(item) => handleItemClick(item, false)}
+              />
+            )}
 
-          {/* ── CARDS GRID (COM BANNERS E CAPAS EM ALTA DEFINIÇÃO) ── */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', 
-            gap: 24,
-            marginBottom: 48
-          }}>
-            {isLoading && page === 1 ? (
-              Array.from({ length: 18 }).map((_, i) => (
-                <div 
-                  key={i} 
-                  className="skeleton-shimmer"
-                  style={{ 
-                    aspectRatio: '2/3', 
-                    borderRadius: 18, 
-                    border: '1px solid rgba(255,255,255,0.04)',
-                  }} 
-                />
-              ))
-            ) : filteredItems.length > 0 ? (
-              filteredItems.map((item: any, i: number) => {
-                const isTv = tab === 'tv' || tab === 'anime' || Boolean(item.first_air_date);
-                const itemPoster = item.poster_path 
-                  ? tmdb.getImageUrl(item.poster_path, 'w500') 
-                  : (item.backdrop_path ? tmdb.getImageUrl(item.backdrop_path, 'w780') : null);
+            {/* 4. Lançamentos Recentes (2020 - 2026) */}
+            {(tab === 'home' || tab === 'decades') && (
+              <ContentRow
+                title="Lançamentos Recentes (2020 - 2026)"
+                subtitle="Os maiores sucessos da década atual"
+                icon={History}
+                items={recentDecade?.results || []}
+                isLoading={loadingRecentDecade}
+                type="movie"
+                onItemClick={(item) => handleItemClick(item, false)}
+              />
+            )}
 
-                return (
-                  <ContentCard 
-                    key={`${item.id}-${i}`}
-                    item={item} 
-                    index={i}
-                    type={isTv ? 'tv' : 'movie'}
-                    onClick={() => handleSelect({ 
-                      tmdbId: item.id, 
-                      type: isTv ? 'tv' : 'movie', 
-                      title: item.title ?? item.name ?? 'Sem título', 
-                      poster: itemPoster, 
-                      season: isTv ? 1 : undefined, 
-                      episode: isTv ? 1 : undefined,
-                    })} 
-                  />
-                );
-              })
-            ) : (
-              <div style={{ gridColumn: '1 / -1', padding: '60px 0', textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>
-                <Film size={36} style={{ marginBottom: 12, opacity: 0.4 }} />
-                <p style={{ fontSize: 14 }}>Nenhum conteúdo encontrado para este filtro.</p>
-              </div>
+            {/* 5. Clássicos & Anos 90/2000 */}
+            {(tab === 'home' || tab === 'decades') && (
+              <ContentRow
+                title="Clássicos & Nostalgia (Anos 90 e 2000)"
+                subtitle="Filmes icônicos que marcaram época"
+                icon={Film}
+                items={classicDecade?.results || []}
+                isLoading={loadingClassicDecade}
+                type="movie"
+                onItemClick={(item) => handleItemClick(item, false)}
+              />
+            )}
+
+            {/* 6. Séries Populares */}
+            {(tab === 'home' || tab === 'tv') && (
+              <ContentRow
+                title="Séries em Alta"
+                subtitle="Temporadas completas com episódios sincronizados"
+                icon={Tv}
+                items={tvSeries?.results || []}
+                isLoading={loadingTv}
+                type="tv"
+                onItemClick={(item) => handleItemClick(item, true)}
+              />
+            )}
+
+            {/* 7. Animes em Destaque */}
+            {(tab === 'home' || tab === 'anime') && (
+              <ContentRow
+                title="Animes em Destaque"
+                subtitle="Grandes produções de animação japonesa"
+                icon={Sparkles}
+                items={animeData?.results || []}
+                isLoading={loadingAnime}
+                type="tv"
+                onItemClick={(item) => handleItemClick(item, true)}
+              />
             )}
           </div>
 
-          {/* ── LOAD MORE BUTTON (PAGINAÇÃO DINÂMICA) ── */}
-          {filteredItems.length > 0 && (
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 80 }}>
-              <button
-                onClick={() => setPage(prev => prev + 1)}
-                disabled={isLoading}
-                className="cp-load-more"
-              >
-                {isLoading ? (
-                  <>Carregando mais títulos...</>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    Carregar Mais Títulos (Página {page + 1})
-                  </>
-                )}
-              </button>
-            </div>
-          )}
-
           {/* ── INTEGRAÇÃO EXTERNA ── */}
           <div style={{ 
-            marginTop: 20, 
+            margin: '0 5% 80px', 
             paddingTop: 48, 
             borderTop: '1px solid rgba(229,89,29,0.08)',
-            marginBottom: 80,
             position: 'relative',
           }}>
             <div style={{

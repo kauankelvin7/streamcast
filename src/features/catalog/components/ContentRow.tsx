@@ -9,17 +9,17 @@ interface ContentItem {
   thumbnail?: string;
   poster?: string;
   poster_path?: string;
+  backdrop_path?: string;
   year?: string | number;
   release_date?: string;
   first_air_date?: string;
-  duration?: string;
-  rating?: number;
-  quality?: 'HD' | '4K';
-  progress?: number;
+  vote_average?: number;
 }
 
 interface ContentRowProps {
   title: string;
+  subtitle?: string;
+  icon?: any;
   items: ContentItem[];
   isLoading?: boolean;
   type?: 'movie' | 'tv';
@@ -28,6 +28,8 @@ interface ContentRowProps {
 
 export const ContentRow: React.FC<ContentRowProps> = ({ 
   title, 
+  subtitle,
+  icon: Icon,
   items, 
   isLoading, 
   type = 'movie', 
@@ -52,8 +54,8 @@ export const ContentRow: React.FC<ContentRowProps> = ({
   const handleScroll = useCallback(() => {
     if (rowRef.current) {
       const { scrollLeft, scrollWidth, clientWidth } = rowRef.current;
-      setShowLeft(scrollLeft > 2);
-      setShowRight(scrollLeft < scrollWidth - clientWidth - 2);
+      setShowLeft(scrollLeft > 10);
+      setShowRight(scrollLeft < scrollWidth - clientWidth - 10);
     }
   }, []);
 
@@ -62,23 +64,22 @@ export const ContentRow: React.FC<ContentRowProps> = ({
     if (row) {
       row.addEventListener('scroll', handleScroll, { passive: true });
       handleScroll();
-      
       return () => row.removeEventListener('scroll', handleScroll);
     }
   }, [items, handleScroll]);
 
   if (isLoading) {
     return (
-      <div style={{ padding: '24px 0' }}>
-        <h2 style={{ fontSize: 20, fontWeight: 600, padding: '0 5%', color: '#fff', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
-          {title}
-        </h2>
+      <div style={{ marginBottom: 40, position: 'relative' }}>
+        <div style={{ padding: '0 5% 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 180, height: 24, borderRadius: 8 }} className="skeleton-shimmer" />
+        </div>
         <div style={{ display: 'flex', gap: 20, padding: '0 5%', overflow: 'hidden' }}>
           {[...Array(6)].map((_, i) => (
             <div 
               key={i} 
               className="skeleton-shimmer"
-              style={{ flexShrink: 0, width: 180, aspectRatio: '2/3', borderRadius: 16, border: '1px solid rgba(255,255,255,0.04)' }}
+              style={{ flexShrink: 0, width: 175, aspectRatio: '2/3', borderRadius: 18, border: '1px solid rgba(255,255,255,0.04)' }}
             />
           ))}
         </div>
@@ -88,65 +89,132 @@ export const ContentRow: React.FC<ContentRowProps> = ({
 
   if (!items || items.length === 0) return null;
 
-  const navButtonStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: '50%',
-    transform: 'translateY(-50%)',
-    zIndex: 10,
-    width: 44,
-    height: 44,
-    display: 'flex',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: '50%',
-    background: 'rgba(20,20,24,0.9)',
-    backdropFilter: 'blur(8px)',
-    border: '1px solid rgba(255,255,255,0.08)',
-    color: '#fff',
-    cursor: 'pointer',
-    outline: 'none',
-    transition: 'all 0.2s',
-    boxShadow: '0 4px 16px rgba(0,0,0,0.4)',
-  };
-
   return (
-    <div style={{ padding: '24px 0', position: 'relative' }}>
-      <h2 style={{ fontSize: 20, fontWeight: 600, padding: '0 5%', color: '#fff', marginBottom: 16, fontFamily: "'Inter', sans-serif" }}>
-        {title}
-      </h2>
+    <div style={{ marginBottom: 44, position: 'relative' }}>
+      {/* Row Header */}
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'flex-end', 
+        padding: '0 5% 14px',
+      }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {Icon && <Icon size={18} style={{ color: '#F58253' }} />}
+            <h3 style={{ 
+              fontSize: 20, 
+              fontWeight: 700, 
+              color: '#fff', 
+              fontFamily: "'Syne', 'Inter', sans-serif",
+              letterSpacing: '-0.02em',
+              margin: 0,
+            }}>
+              {title}
+            </h3>
+          </div>
+          {subtitle && (
+            <p style={{ margin: '3px 0 0', fontSize: 12.5, color: 'rgba(255,255,255,0.45)', fontWeight: 500 }}>
+              {subtitle}
+            </p>
+          )}
+        </div>
 
+        {/* Total indicator */}
+        <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+          {items.length} títulos
+        </span>
+      </div>
+
+      {/* Carousel Container */}
       <div style={{ position: 'relative' }}>
-        {/* Left Arrow */}
+
+        {/* ── LEFT BLUR & VIGNETTE FADE EFFECT ── */}
+        <AnimatePresence>
+          {showLeft && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 16,
+                left: 0,
+                width: 70,
+                zIndex: 20,
+                background: 'linear-gradient(90deg, #08080B 0%, rgba(8,8,11,0.7) 50%, transparent 100%)',
+                backdropFilter: 'blur(3px)',
+                WebkitBackdropFilter: 'blur(3px)',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── LEFT NAV BUTTON ── */}
         <AnimatePresence>
           {showLeft && (
             <motion.button
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
+              initial={{ opacity: 0, scale: 0.8, x: -10 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: -10 }}
               onClick={() => scroll('left')}
-              style={{ ...navButtonStyle, left: 16 }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#E5591D'; e.currentTarget.style.color = '#E5591D'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
-              aria-label="Rolar para a esquerda"
+              style={{
+                position: 'absolute',
+                top: 'calc(50% - 8px)',
+                transform: 'translateY(-50%)',
+                zIndex: 30,
+                left: '2.5%',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'rgba(18, 18, 24, 0.92)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(229,89,29,0.35)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.8), 0 0 16px rgba(229,89,29,0.25)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#E5591D';
+                e.currentTarget.style.borderColor = 'transparent';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(18, 18, 24, 0.92)';
+                e.currentTarget.style.borderColor = 'rgba(229,89,29,0.35)';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              }}
+              aria-label="Deslizar para esquerda"
             >
               <ChevronLeft size={22} />
             </motion.button>
           )}
         </AnimatePresence>
 
-        {/* Scroll Area */}
+        {/* ── HORIZONTAL SLIDING TRACK ── */}
         <div
           ref={rowRef}
           style={{ 
-            display: 'flex', gap: 20, padding: '0 5% 16px', 
-            overflowX: 'auto', scrollBehavior: 'smooth',
-            scrollbarWidth: 'none', msOverflowStyle: 'none',
+            display: 'flex', 
+            gap: 20, 
+            padding: '0 5% 16px', 
+            overflowX: 'auto', 
+            scrollBehavior: 'smooth',
+            scrollbarWidth: 'none',
+            WebkitOverflowScrolling: 'touch',
           }}
         >
-          {items.map((item) => (
-            <div key={item.id} style={{ flexShrink: 0, width: 180 }}>
+          {items.map((item, idx) => (
+            <div key={`${item.id}-${idx}`} style={{ flexShrink: 0, width: 175 }}>
               <ContentCard 
                 item={item} 
+                index={idx}
                 type={type} 
                 onClick={() => onItemClick?.(item)} 
               />
@@ -154,26 +222,76 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           ))}
         </div>
 
-        {/* Right Arrow */}
+        {/* ── RIGHT BLUR & VIGNETTE FADE EFFECT ── */}
+        <AnimatePresence>
+          {showRight && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              style={{
+                position: 'absolute',
+                top: 0,
+                bottom: 16,
+                right: 0,
+                width: 70,
+                zIndex: 20,
+                background: 'linear-gradient(270deg, #08080B 0%, rgba(8,8,11,0.7) 50%, transparent 100%)',
+                backdropFilter: 'blur(3px)',
+                WebkitBackdropFilter: 'blur(3px)',
+                pointerEvents: 'none',
+              }}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* ── RIGHT NAV BUTTON ── */}
         <AnimatePresence>
           {showRight && (
             <motion.button
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: 10 }}
+              initial={{ opacity: 0, scale: 0.8, x: 10 }}
+              animate={{ opacity: 1, scale: 1, x: 0 }}
+              exit={{ opacity: 0, scale: 0.8, x: 10 }}
               onClick={() => scroll('right')}
-              style={{ ...navButtonStyle, right: 16 }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#E5591D'; e.currentTarget.style.color = '#E5591D'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)'; e.currentTarget.style.color = '#fff'; }}
-              aria-label="Rolar para a direita"
+              style={{
+                position: 'absolute',
+                top: 'calc(50% - 8px)',
+                transform: 'translateY(-50%)',
+                zIndex: 30,
+                right: '2.5%',
+                width: 44,
+                height: 44,
+                borderRadius: '50%',
+                background: 'rgba(18, 18, 24, 0.92)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
+                border: '1px solid rgba(229,89,29,0.35)',
+                color: '#fff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.8), 0 0 16px rgba(229,89,29,0.25)',
+                transition: 'all 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = '#E5591D';
+                e.currentTarget.style.borderColor = 'transparent';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = 'rgba(18, 18, 24, 0.92)';
+                e.currentTarget.style.borderColor = 'rgba(229,89,29,0.35)';
+                e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
+              }}
+              aria-label="Deslizar para direita"
             >
               <ChevronRight size={22} />
             </motion.button>
           )}
         </AnimatePresence>
-        
-        <style>{`.custom-scrollbar-hide::-webkit-scrollbar { display: none; }`}</style>
       </div>
     </div>
   );
 };
+export default ContentRow;
