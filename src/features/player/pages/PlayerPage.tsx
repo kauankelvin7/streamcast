@@ -7,7 +7,6 @@ import { resolveNextMovie } from '../../../utils/movieAutonext';
 import { PROVIDERS, buildPlayerUrl } from '../../../utils/providers';
 import { silentCacheCleanup } from '../../../utils/cacheManager';
 import { ArrowLeft, SkipBack, SkipForward, Server, Check } from 'lucide-react';
-import LiveTvPlayer from '../components/LiveTvPlayer';
 
 export default function PlayerPage() {
   const { type, tmdbId }  = useParams<{ type: string; tmdbId: string }>();
@@ -109,7 +108,7 @@ export default function PlayerPage() {
   // ── LÓGICA CENTRALIZADA DA URL DO IFRAME ──
   const currentVideoSrc = useMemo(() => {
     if (type === 'youtube') {
-      return `https://www.youtube.com/embed/${tmdbId}?autoplay=1&enablejsapi=1&muted=1`;
+      return `https://www.youtube-nocookie.com/embed/${tmdbId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`;
     }
     
     return buildPlayerUrl({
@@ -452,23 +451,17 @@ export default function PlayerPage() {
       )}
 
       {/* ── PLAYER ── */}
-      {type === 'direct' && state?.url ? (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 0, willChange: 'transform', transform: 'translateZ(0)' }}>
-          <LiveTvPlayer url={state.url} autoPlay={true} />
-        </div>
-      ) : (
-        <iframe
-          ref={iframeRef}
-          key={`${tmdbId}-${season}-${episode}-${selectedProvider}`}
-          src={currentVideoSrc}
-          className="embed-iframe"
-          onLoad={autoClickIframe}
-          style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0, zIndex: 0, willChange: 'transform', transform: 'translateZ(0)' }}
-          allowFullScreen
-          allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *"
-          referrerPolicy="strict-origin-when-cross-origin"
-        />
-      )}
+      <iframe
+        ref={iframeRef}
+        key={`${tmdbId}-${season}-${episode}-${selectedProvider}`}
+        src={currentVideoSrc}
+        className="embed-iframe"
+        onLoad={autoClickIframe}
+        style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0, zIndex: 0, willChange: 'transform', transform: 'translateZ(0)' }}
+        allowFullScreen
+        allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
+        referrerPolicy="strict-origin-when-cross-origin"
+      />
     </div>
   );
 }

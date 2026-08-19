@@ -8,7 +8,7 @@ import { X, ChevronLeft, ChevronRight, Play, Monitor, Clock } from 'lucide-react
 
 interface ContentInfo {
   tmdbId: number | string;
-  type: 'movie' | 'tv' | 'anime' | 'direct';
+  type: 'movie' | 'tv' | 'anime' | 'youtube';
   title: string;
   poster: string | null;
   url?: string;
@@ -164,7 +164,7 @@ export default function SyncModal({ content, onClose }: Props) {
   const { syncContent, isSyncing } = useSync();
 
   const [step, setStep] = useState<Step>(
-    (content.type === 'movie' || content.type === 'direct') ? 'confirm' : 'season'
+    content.type === 'movie' ? 'confirm' : 'season'
   );
   const [selectedSeason, setSelectedSeason] = useState(1);
   const [selectedEpisode, setSelectedEpisode] = useState<Episode | null>(null);
@@ -183,13 +183,13 @@ export default function SyncModal({ content, onClose }: Props) {
   const { data: tvDetails } = useQuery({
     queryKey: ['tv-details', content.tmdbId],
     queryFn: () => tmdb.getTVDetails(Number(content.tmdbId)),
-    enabled: content.type !== 'movie' && content.type !== 'direct',
+    enabled: content.type !== 'movie',
   });
 
   const { data: seasonData, isLoading: loadingEps } = useQuery({
     queryKey: ['tv-season', content.tmdbId, selectedSeason],
     queryFn: () => tmdb.getTVSeason(Number(content.tmdbId), selectedSeason),
-    enabled: content.type !== 'movie' && content.type !== 'direct' && step === 'episode',
+    enabled: content.type !== 'movie' && step === 'episode',
   });
 
   const totalSeasons = tvDetails?.number_of_seasons ?? 1;
@@ -200,9 +200,9 @@ export default function SyncModal({ content, onClose }: Props) {
       tmdbId: content.tmdbId,
       type: content.type,
       title: content.title,
-      season: (content.type !== 'movie' && content.type !== 'direct') ? selectedSeason : undefined,
+      season: content.type !== 'movie' ? selectedSeason : undefined,
       episode:
-        (content.type !== 'movie' && content.type !== 'direct') && selectedEpisode
+        content.type !== 'movie' && selectedEpisode
           ? selectedEpisode.episode_number
           : undefined,
       url: content.url,
@@ -216,7 +216,7 @@ export default function SyncModal({ content, onClose }: Props) {
   function handleSolo() {
     navigate(`/watch/${content.type}/${content.tmdbId}`, {
       state: {
-        season: (content.type !== 'movie' && content.type !== 'direct') ? selectedSeason : undefined,
+        season: content.type !== 'movie' ? selectedSeason : undefined,
         episode: selectedEpisode?.episode_number,
         synced: false,
         url: content.url,
@@ -328,7 +328,7 @@ export default function SyncModal({ content, onClose }: Props) {
                 color: '#E5591D', fontSize: 11, marginBottom: 4, 
                 textTransform: 'uppercase', letterSpacing: '0.08em', fontWeight: 600 
               }}>
-                {content.type === 'movie' ? 'Filme' : content.type === 'anime' ? 'Anime' : content.type === 'direct' ? 'TV Ao Vivo' : 'Série'}
+                {content.type === 'movie' ? 'Filme' : content.type === 'anime' ? 'Anime' : content.type === 'youtube' ? 'YouTube' : 'Série'}
               </p>
               <h2 style={{ 
                 fontSize: 17, fontWeight: 600, color: '#fff', 
@@ -337,7 +337,7 @@ export default function SyncModal({ content, onClose }: Props) {
               }}>
                 {content.title}
               </h2>
-              {content.type !== 'movie' && content.type !== 'direct' && selectedEpisode && step === 'confirm' && (
+              {content.type !== 'movie' && selectedEpisode && step === 'confirm' && (
                 <p style={{ color: 'rgba(245,130,83,0.6)', fontSize: 12, marginTop: 4 }}>
                   T{selectedSeason} · E{selectedEpisode.episode_number} — {selectedEpisode.name}
                 </p>
@@ -345,7 +345,7 @@ export default function SyncModal({ content, onClose }: Props) {
             </div>
 
             {/* Progress dots for series */}
-            {(content.type !== 'movie' && content.type !== 'direct') && (
+            {content.type !== 'movie' && (
               <div style={{ display: 'flex', gap: 6, flexShrink: 0, marginRight: 8 }}>
                 {STEPS.map((s, i) => (
                   <div key={s} style={{
@@ -509,7 +509,7 @@ export default function SyncModal({ content, onClose }: Props) {
                   transition={{ duration: 0.25, ease: 'easeOut' }}
                   style={{ padding: '20px 28px 28px' }}
                 >
-                  {(content.type !== 'movie' && content.type !== 'direct') && selectedEpisode && (
+                  {content.type !== 'movie' && selectedEpisode && (
                     <div style={{
                       background: 'rgba(229,89,29,0.04)', border: '1px solid rgba(229,89,29,0.12)',
                       borderRadius: 16, padding: 14, marginBottom: 24,

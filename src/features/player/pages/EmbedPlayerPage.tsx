@@ -4,7 +4,6 @@ import { tmdb } from '@lib/tmdb';
 import { useSyncListener, SyncPayload } from '@features/sync/hooks/useSync';
 import { resolveNextMovie } from '../../../utils/movieAutonext';
 import { PROVIDERS, buildPlayerUrl } from '../../../utils/providers';
-import LiveTvPlayer from '../components/LiveTvPlayer';
 
 export default function EmbedPlayerPage() {
   const [content, setContent] = useState<SyncPayload | null>(null);
@@ -62,7 +61,7 @@ export default function EmbedPlayerPage() {
 
   // Autonext Inteligente por tempo do conteúdo para embeds
   useEffect(() => {
-    if (!content || content.type === 'youtube' || content.type === 'direct') return;
+    if (!content || content.type === 'youtube') return;
 
     let durationMins = 45;
     if (content.type === 'movie') {
@@ -120,17 +119,9 @@ export default function EmbedPlayerPage() {
     ); 
   }
 
-  if (content.type === 'direct' && content.url) {
-    return (
-      <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
-        <LiveTvPlayer url={content.url} autoPlay={true} muted={false} />
-      </div>
-    );
-  }
-
   // URL do provedor principal Vidsrc RU (Recomendado)
   const iframeSrc = content.type === 'youtube'
-    ? `https://www.youtube-nocookie.com/embed/${content.tmdbId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1`
+    ? `https://www.youtube-nocookie.com/embed/${content.tmdbId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`
     : buildPlayerUrl({
         type: content.type as any,
         id: String(content.tmdbId),
@@ -140,7 +131,6 @@ export default function EmbedPlayerPage() {
         provider: PROVIDERS.VIDSRC_RU
       } as any) || '';
 
-
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
       <iframe
@@ -149,8 +139,8 @@ export default function EmbedPlayerPage() {
         className="embed-iframe"
         style={{ width: '100%', height: '100%', border: 'none', willChange: 'transform', transform: 'translateZ(0)' }}
         allowFullScreen
-        allow="autoplay; fullscreen; picture-in-picture; encrypted-media"
-        referrerPolicy="no-referrer"
+        allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
+        referrerPolicy="strict-origin-when-cross-origin"
       />
     </div>
   );

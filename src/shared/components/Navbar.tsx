@@ -26,7 +26,6 @@ export const Navbar: React.FC = () => {
     { label: 'Filmes', href: '/movies' },
     { label: 'Séries', href: '/series' },
     { label: 'Minha Lista', href: '/my-list' },
-    { label: 'Ao Vivo', href: '/live' },
   ];
 
   return (
