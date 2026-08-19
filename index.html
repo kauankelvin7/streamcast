@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="theme-color" content="#0A0A0C" />
+    <meta name="referrer" content="no-referrer" />
+    <meta name="description" content="StreamCast — Painel de controle e player de vídeo profissional com sincronização em tempo real." />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <title>StreamCast — Video Player Pro</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Dynamic favicon: StreamCast branded play icon
+      (function() {
+        try {
+          var c = document.createElement('canvas');
+          c.width = 64; c.height = 64;
+          var ctx = c.getContext('2d');
+          if (!ctx) return;
+
+          // Background: dark rounded
+          ctx.fillStyle = '#0A0A0C';
+          ctx.beginPath();
+          ctx.roundRect(0, 0, 64, 64, 14);
+          ctx.fill();
+
+          // Inner glow
+          var grd = ctx.createRadialGradient(32, 32, 4, 32, 32, 30);
+          grd.addColorStop(0, 'rgba(229, 89, 29, 0.25)');
+          grd.addColorStop(1, 'rgba(229, 89, 29, 0.02)');
+          ctx.fillStyle = grd;
+          ctx.beginPath();
+          ctx.arc(32, 32, 28, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Play triangle
+          var g = ctx.createLinearGradient(20, 16, 52, 48);
+          g.addColorStop(0, '#E5591D');
+          g.addColorStop(1, '#F58253');
+          ctx.fillStyle = g;
+          ctx.beginPath();
+          ctx.moveTo(24, 16);
+          ctx.lineTo(52, 32);
+          ctx.lineTo(24, 48);
+          ctx.closePath();
+          ctx.shadowColor = 'rgba(229, 89, 29, 0.5)';
+          ctx.shadowBlur = 8;
+          ctx.fill();
+
+          var href = c.toDataURL('image/png');
+          var link = document.createElement('link');
+          link.rel = 'icon';
+          link.type = 'image/png';
+          link.href = href;
+          document.head.appendChild(link);
+        } catch(e) {}
+      })();
+    </script>
+  </body>
+</html>

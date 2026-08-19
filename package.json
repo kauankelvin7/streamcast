@@ -1,0 +1,46 @@
+{
+  "name": "streamcast",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@tabler/icons-react": "^3.46.0",
+    "@tanstack/react-query": "^5.90.21",
+    "clsx": "^2.1.1",
+    "firebase": "^10.14.1",
+    "fraction.js": "^5.3.4",
+    "framer-motion": "^12.37.0",
+    "hls.js": "^1.6.16",
+    "lucide-react": "^0.454.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.13.1",
+    "tailwind-merge": "^3.5.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.29.7",
+    "@tailwindcss/postcss": "^4.1.16",
+    "@tailwindcss/vite": "^4.3.3",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "@vitejs/plugin-react-swc": "^4.3.3",
+    "@vitest/coverage-v8": "^4.1.0",
+    "autoprefixer": "^10.4.21",
+    "jsdom": "^29.0.0",
+    "msw": "^2.12.11",
+    "tailwindcss": "^4.1.16",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11",
+    "vitest": "^4.1.0"
+  }
+}
