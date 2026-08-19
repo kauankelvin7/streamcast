@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ContentCard from './ContentCard';
@@ -78,6 +78,29 @@ export const ContentRow: React.FC<ContentRowProps> = ({
   const canScrollLeft = offset > 0;
   const canScrollRight = offset < maxOffset - 5;
 
+  // Efeito elegante e suave de desfoque/gradiente nas bordas cortadas
+  const maskStyle: React.CSSProperties = useMemo(() => {
+    if (canScrollLeft && canScrollRight) {
+      return {
+        maskImage: 'linear-gradient(to right, transparent 0%, black 36px, black calc(100% - 54px), transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 36px, black calc(100% - 54px), transparent 100%)',
+      };
+    }
+    if (canScrollRight) {
+      return {
+        maskImage: 'linear-gradient(to right, black calc(100% - 54px), transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, black calc(100% - 54px), transparent 100%)',
+      };
+    }
+    if (canScrollLeft) {
+      return {
+        maskImage: 'linear-gradient(to right, transparent 0%, black 36px, black 100%)',
+        WebkitMaskImage: 'linear-gradient(to right, transparent 0%, black 36px, black 100%)',
+      };
+    }
+    return {};
+  }, [canScrollLeft, canScrollRight]);
+
   if (isLoading) {
     return (
       <div style={{ marginBottom: 44, padding: '0 5%' }}>
@@ -130,7 +153,7 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           )}
         </div>
 
-        {/* Navigation Indicator / Buttons in Header on Mobile / Total */}
+        {/* Navigation Indicator / Total */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 12, color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
             {items.length} títulos
@@ -187,7 +210,7 @@ export const ContentRow: React.FC<ContentRowProps> = ({
           )}
         </AnimatePresence>
 
-        {/* ── STRICT VIEWPORT (OVERFLOW HIDDEN TO PREVENT ANY LEFT BLEEDING) ── */}
+        {/* ── STRICT VIEWPORT WITH ELEGANT EDGE FADE MASK ── */}
         <div 
           ref={containerRef}
           style={{ 
@@ -195,6 +218,8 @@ export const ContentRow: React.FC<ContentRowProps> = ({
             overflow: 'hidden', 
             borderRadius: 6,
             padding: '4px 0 16px 0',
+            transition: 'mask-image 0.3s ease, -webkit-mask-image 0.3s ease',
+            ...maskStyle,
           }}
         >
           {/* ── TRANSLATING INNER TRACK ── */}
