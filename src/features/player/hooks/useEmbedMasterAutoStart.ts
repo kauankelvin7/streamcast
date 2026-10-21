@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import type { RefObject } from 'react';
 import {
   isEmbedMasterUrl,
@@ -21,10 +21,19 @@ export function useEmbedMasterAutoStart(
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const phase = useRef<'idle' | 'starting' | 'playing' | 'paused' | 'ended' | 'blocked'>('idle');
   const attempts = useRef(0);
+  const [lastDiagnostic, setLastDiagnostic] = useState('');
 
   const debug = useCallback((message: string) => {
     if (new URLSearchParams(window.location.search).get('autoplayDebug') === '1') {
-      console.info('[Streamcast autoplay]', message);
+      const entry = new Date().toLocaleTimeString() + ' · ' + message;
+      console.info('[Streamcast autoplay]', entry);
+      setLastDiagnostic(entry);
+      // Third-party embeds may clear DevTools console. Store only state text,
+      // never URLs, IDs, tokens, media data or message payloads.
+      try {
+        const previous = JSON.parse(sessionStorage.getItem('streamcast-autoplay-diagnostics') || '[]') as string[];
+        sessionStorage.setItem('streamcast-autoplay-diagnostics', JSON.stringify([...previous.slice(-39), entry]));
+      } catch { /* Private browsing / storage blocked: on-screen indicator remains. */ }
     }
   }, []);
 
@@ -139,5 +148,5 @@ export function useEmbedMasterAutoStart(
     };
   }, [mediaKey, iframeRef, requestPlayback, clearRetry, startNewInternalEpisode, debug]);
 
-  return { requestPlayback: handleFrameLoad };
+  return { requestPlayback: handleFrameLoad, lastDiagnostic };
 }
