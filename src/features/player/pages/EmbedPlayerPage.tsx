@@ -1,12 +1,23 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { sendEmbedMasterCommand, readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
 import { useQuery } from '@tanstack/react-query';
 import { tmdb } from '@lib/tmdb';
 import { useSyncListener, SyncPayload } from '@features/sync/hooks/useSync';
 import { resolveNextMovie } from '../../../utils/movieAutonext';
-import { PROVIDERS, buildPlayerUrl } from '../../../utils/providers';
+import { getEmbedProvider, buildPlayerUrl, supportsNativeAutonext } from '../../../utils/providers';
 
 export default function EmbedPlayerPage() {
   const [content, setContent] = useState<SyncPayload | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Allow only known provider IDs, never a user-supplied iframe URL.
+  const query = new URLSearchParams(window.location.search);
+  const selectedProvider = getEmbedProvider(query.get('provider'));
+  // Explicit opt-in: avoid two independent auto-advance mechanisms racing.
+  const nativeAutonext = query.get('nativeAutonext') === '1' && supportsNativeAutonext(selectedProvider);
+  const initializeIframe = useCallback(() => {
+    sendEmbedMasterCommand(iframeRef.current, 'mute');
+    sendEmbedMasterCommand(iframeRef.current, 'play');
+  }, []);
 
   const handleSync = useCallback((payload: SyncPayload) => {
     setContent(payload);
@@ -21,23 +32,24 @@ export default function EmbedPlayerPage() {
   });
 
   const { data: seasonDetails } = useQuery({
-    queryKey: ['tv', content?.tmdbId, 'season', content?.season],
+    queryKey: ['tv', content?.tmdbId, 'season', content?.season ?? 1],
     queryFn: () => tmdb.getTVSeason(Number(content!.tmdbId), content!.season ?? 1),
-    enabled: !!content && (content.type === 'tv' || content.type === 'anime') && !!content.season,
+    // A synced TV payload may omit season (null), which means season 1.
+    enabled: !!content && (content.type === 'tv' || content.type === 'anime'),
   });
 
   const totalSeasons  = tvDetails?.number_of_seasons ?? 1;
   const totalEpisodes = seasonDetails?.episodes?.length ?? 1;
 
   const getNext = useCallback((): { season: number; episode: number } | null => {
-    if (!content || (content.type !== 'tv' && content.type !== 'anime')) return null;
+    if (!content || !tvDetails || !seasonDetails || (content.type !== 'tv' && content.type !== 'anime')) return null;
     const currentSeason = content.season ?? 1;
     const currentEpisode = content.episode ?? 1;
 
     if (currentEpisode < totalEpisodes) return { season: currentSeason, episode: currentEpisode + 1 };
     if (currentSeason < totalSeasons) return { season: currentSeason + 1, episode: 1 };
     return null;
-  }, [content, totalEpisodes, totalSeasons]);
+  }, [content, totalEpisodes, totalSeasons, tvDetails, seasonDetails]);
 
   const handleMovieEnd = useCallback(() => {
     if (!content || content.type !== 'movie') return;
@@ -59,34 +71,30 @@ export default function EmbedPlayerPage() {
     })();
   }, [content]);
 
-  // Autonext Inteligente por tempo do conteúdo para embeds
+  // Advance only when the actual provider reports media end, never by wall-clock.
   useEffect(() => {
     if (!content || content.type === 'youtube') return;
-
-    let durationMins = 45;
-    if (content.type === 'movie') {
-      durationMins = 110;
-    } else if (tvDetails?.episode_run_time && tvDetails.episode_run_time.length > 0) {
-      durationMins = tvDetails.episode_run_time[0];
-    }
-
-    const timer = setTimeout(() => {
-      if (content.type === 'movie') {
-        handleMovieEnd();
-      } else {
-        const next = getNext();
-        if (next) {
-          setContent({
-            ...content,
-            season: next.season,
-            episode: next.episode,
-          });
-        }
+    let ended = false;
+    const handleMessage = (event: MessageEvent) => {
+      const playbackEvent = readEmbeddedPlaybackEvent(event, iframeRef.current);
+      if (!playbackEvent || ended) return;
+      if (playbackEvent === 'ready') {
+        initializeIframe();
+        return;
       }
-    }, durationMins * 60 * 1000);
-
-    return () => clearTimeout(timer);
-  }, [content, tvDetails, getNext, handleMovieEnd]);
+      if (playbackEvent !== 'ended') return;
+      // The provider advances inside its own iframe; never remount it on end.
+      if (nativeAutonext && (content.type === 'tv' || content.type === 'anime')) return;
+      ended = true;
+      if (content.type === 'movie') handleMovieEnd();
+      else {
+        const next = getNext();
+        if (next) setContent(previous => previous ? { ...previous, season: next.season, episode: next.episode } : previous);
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [content, getNext, handleMovieEnd, initializeIframe, nativeAutonext]);
 
   // Sem conteúdo ainda
   if (!content) {
@@ -121,19 +129,34 @@ export default function EmbedPlayerPage() {
 
   // URL do provedor principal Vidsrc RU (Recomendado)
   const iframeSrc = content.type === 'youtube'
-    ? `https://www.youtube-nocookie.com/embed/${content.tmdbId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`
+    ? `https://www.youtube-nocookie.com/embed/${content.tmdbId}?autoplay=1&mute=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`
     : buildPlayerUrl({
         type: content.type as any,
         id: String(content.tmdbId),
         tmdb: content.tmdbId,
         season: content.season || 1,
         episode: content.episode || 1,
-        provider: PROVIDERS.VIDSRC_RU
+        provider: selectedProvider,
+        nativeAutonext,
+        url: content.url ?? undefined
       } as any) || '';
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
+      {content.type === 'direct' && content.url ? (
+        <video
+          key={content.url}
+          src={content.url}
+          autoPlay
+          muted
+          playsInline
+          controls
+          style={{ width: '100%', height: '100%', background: '#000' }}
+        />
+      ) : (
       <iframe
+        ref={iframeRef}
+        onLoad={initializeIframe}
         key={`${content.tmdbId}-${content.season}-${content.episode}`}
         src={iframeSrc}
         className="embed-iframe"
@@ -142,6 +165,7 @@ export default function EmbedPlayerPage() {
         allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
         referrerPolicy="strict-origin-when-cross-origin"
       />
+      )}
     </div>
   );
 }

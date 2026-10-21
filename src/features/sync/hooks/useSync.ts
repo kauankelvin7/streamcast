@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ref, set, onValue, off } from 'firebase/database';
+import { ref, set, onValue } from 'firebase/database';
 import { rtdb, auth } from '@lib/firebase';
 
 export interface SyncPayload {
@@ -62,6 +62,8 @@ export function useSyncListener(
       }
     });
 
-    return () => off(syncRef, 'value', unsubscribe);
+    // onValue returns the unsubscribe function itself; passing it to off()
+    // as a callback does not unregister the original listener.
+    return unsubscribe;
   }, [onSync]);
 }

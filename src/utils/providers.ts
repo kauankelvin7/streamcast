@@ -4,12 +4,33 @@ import type { VideoSource } from '../types';
 export const PROVIDERS = {
   VIDSRC_RU: 'VidSrc / EmbedMaster',
   VIDSRC_CC: 'VidSrc CC (Ultra HD)',
-  VIDSRC_ME: 'VidSrc Me',
+  VIDSRC_TW: 'VidSrc TW (eventos documentados)',
+  VIDSRC_ME: 'VidSrc Me / vsembed.ru',
   SUPEREMBED: 'SuperEmbed (Multi)',
   TWO_EMBED: '2Embed VIP',
 } as const;
 
 export type ProviderName = typeof PROVIDERS[keyof typeof PROVIDERS];
+
+/** Stable, allowlisted provider IDs for the /embed?provider=... query. */
+export const EMBED_PROVIDER_BY_ID: Record<string, ProviderName> = {
+  embedmaster: PROVIDERS.VIDSRC_RU,
+  'vidsrc-cc': PROVIDERS.VIDSRC_CC,
+  'vidsrc-tw': PROVIDERS.VIDSRC_TW,
+  'vidsrc-me': PROVIDERS.VIDSRC_ME,
+  multiembed: PROVIDERS.SUPEREMBED,
+  '2embed': PROVIDERS.TWO_EMBED,
+};
+export function getEmbedProvider(id: string | null): ProviderName {
+  return id && Object.prototype.hasOwnProperty.call(EMBED_PROVIDER_BY_ID, id)
+    ? EMBED_PROVIDER_BY_ID[id]
+    : PROVIDERS.VIDSRC_RU;
+}
+
+/** Official VidSrc/vSEmbed documented support for their own TV autonext UI. */
+export function supportsNativeAutonext(provider: string): boolean {
+  return provider === PROVIDERS.VIDSRC_TW || provider === PROVIDERS.VIDSRC_ME;
+}
 
 export function buildPlayerUrl(video: VideoSource): string {
   if (!video) return '';
@@ -20,6 +41,17 @@ export function buildPlayerUrl(video: VideoSource): string {
   const episode = video.episode ?? 1;
   const provider = video.provider || PROVIDERS.VIDSRC_RU;
 
+  // Provider with documented completion events (VidSrc TW).
+  // Disable provider autonext to avoid racing with Streamcast's season navigation.
+  if (provider === PROVIDERS.VIDSRC_TW) {
+    const url = new URL(isSeries
+      ? `https://vidsrc.tw/embed/tv/${id}/${season}/${episode}`
+      : `https://vidsrc.tw/embed/movie/${id}`);
+    url.searchParams.set('autoplay', '1');
+    if (isSeries) url.searchParams.set('autonext', video.nativeAutonext === true ? '1' : '0');
+    return url.toString();
+  }
+
   // 1. Provedor VidSrc CC (Alta estabilidade e legendas em português)
   if (provider === PROVIDERS.VIDSRC_CC) {
     if (isSeries) {
@@ -28,12 +60,15 @@ export function buildPlayerUrl(video: VideoSource): string {
     return `https://vidsrc.cc/v2/embed/movie/${id}?autoPlay=true`;
   }
 
-  // 2. Provedor VidSrc Me
+  // 2. VidSrc Me officially announced migration to vsembed.ru/vsembed.su.
+  // Use the documented vSEmbed URLs/events; keep autonext under Streamcast control.
   if (provider === PROVIDERS.VIDSRC_ME) {
-    if (isSeries) {
-      return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&autoplay=1`;
-    }
-    return `https://vidsrc.me/embed/movie?tmdb=${id}&autoplay=1`;
+    const url = new URL(isSeries
+      ? `https://vsembed.ru/embed/tv/${id}/${season}/${episode}`
+      : `https://vsembed.ru/embed/movie/${id}`);
+    url.searchParams.set('autoplay', '1');
+    if (isSeries) url.searchParams.set('autonext', video.nativeAutonext === true ? '1' : '0');
+    return url.toString();
   }
 
   // 3. Provedor SuperEmbed (MultiEmbed)
