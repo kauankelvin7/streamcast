@@ -110,4 +110,83 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     expect(post).toHaveBeenCalledTimes(10);
     post.mockRestore();
   });
+  it('rearms muted autoplay for a provider-native NEXT without React changing the iframe', () => {
+    const view = render(<Harness episode={1} />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play');
+    sendEvent(frame, 'end');
+    const afterFirst = post.mock.calls.length;
+    sendEvent(frame, 'next');
+    act(() => vi.advanceTimersByTime(800));
+    expect(view.container.querySelector('iframe')).toBe(frame);
+    expect(post).toHaveBeenCalledTimes(afterFirst + 2);
+    expect(post).toHaveBeenNthCalledWith(afterFirst + 1,
+      { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link');
+    expect(post).toHaveBeenNthCalledWith(afterFirst + 2,
+      { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link');
+    sendEvent(frame, 'play');
+    const confirmed = post.mock.calls.length;
+    act(() => vi.advanceTimersByTime(20000));
+    expect(post).toHaveBeenCalledTimes(confirmed);
+    post.mockRestore();
+  });
+
+  it('uses the provider NEW event to restart retries inside the same iframe', () => {
+    const view = render(<Harness episode={1} />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play');
+    const before = post.mock.calls.length;
+    sendEvent(frame, 'new');
+    expect(post).toHaveBeenCalledTimes(before + 2);
+    expect(view.container.querySelector('iframe')).toBe(frame);
+    post.mockRestore();
+  });
+
+  it('rearms after end if the original iframe fires load again during internal navigation', () => {
+    const view = render(<Harness episode={1} />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'end');
+    const before = post.mock.calls.length;
+    fireEvent.load(frame);
+    expect(post).toHaveBeenCalledTimes(before + 2);
+    post.mockRestore();
+  });
+
+  it('does not restart a manually paused video from a stray init, load or timer', () => {
+    const view = render(<Harness episode={1} />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play');
+    sendEvent(frame, 'userpause');
+    const pausedCount = post.mock.calls.length;
+    sendEvent(frame, 'init');
+    fireEvent.load(frame);
+    act(() => vi.advanceTimersByTime(20000));
+    expect(post).toHaveBeenCalledTimes(pausedCount);
+    post.mockRestore();
+  });
+
+  it('ignores spoofed provider-native transitions from another origin', () => {
+    const view = render(<Harness episode={1} />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play');
+    const before = post.mock.calls.length;
+    act(() => window.dispatchEvent(new MessageEvent('message', {
+      origin: 'https://malicious.example', source: frame.contentWindow,
+      data: { source: 'embedmaster_player', event: 'next' },
+    })));
+    act(() => vi.advanceTimersByTime(20000));
+    expect(post).toHaveBeenCalledTimes(before);
+    post.mockRestore();
+  });
+
 });
