@@ -1,5 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { sendEmbedMasterCommand, readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
+import { readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
+import { useEmbedMasterAutoStart } from '../hooks/useEmbedMasterAutoStart';
 import { useQuery } from '@tanstack/react-query';
 import { tmdb } from '@lib/tmdb';
 import { useSyncListener, SyncPayload } from '@features/sync/hooks/useSync';
@@ -14,10 +15,10 @@ export default function EmbedPlayerPage() {
   const selectedProvider = getEmbedProvider(query.get('provider'));
   // Explicit opt-in: avoid two independent auto-advance mechanisms racing.
   const nativeAutonext = query.get('nativeAutonext') === '1' && supportsNativeAutonext(selectedProvider);
-  const initializeIframe = useCallback(() => {
-    sendEmbedMasterCommand(iframeRef.current, 'mute');
-    sendEmbedMasterCommand(iframeRef.current, 'play');
-  }, []);
+  const { requestPlayback } = useEmbedMasterAutoStart(
+    iframeRef,
+    `${selectedProvider}:${content?.tmdbId ?? ''}:${content?.season ?? 1}:${content?.episode ?? 1}`,
+  );
 
   const handleSync = useCallback((payload: SyncPayload) => {
     setContent(payload);
@@ -78,10 +79,6 @@ export default function EmbedPlayerPage() {
     const handleMessage = (event: MessageEvent) => {
       const playbackEvent = readEmbeddedPlaybackEvent(event, iframeRef.current);
       if (!playbackEvent || ended) return;
-      if (playbackEvent === 'ready') {
-        initializeIframe();
-        return;
-      }
       if (playbackEvent !== 'ended') return;
       // The provider advances inside its own iframe; never remount it on end.
       if (nativeAutonext && (content.type === 'tv' || content.type === 'anime')) return;
@@ -94,7 +91,7 @@ export default function EmbedPlayerPage() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [content, getNext, handleMovieEnd, initializeIframe, nativeAutonext]);
+  }, [content, getNext, handleMovieEnd, nativeAutonext]);
 
   // Sem conteúdo ainda
   if (!content) {
@@ -156,7 +153,7 @@ export default function EmbedPlayerPage() {
       ) : (
       <iframe
         ref={iframeRef}
-        onLoad={initializeIframe}
+        onLoad={requestPlayback}
         key={`${content.tmdbId}-${content.season}-${content.episode}`}
         src={iframeSrc}
         className="embed-iframe"
