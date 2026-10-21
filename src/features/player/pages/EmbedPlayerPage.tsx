@@ -4,13 +4,16 @@ import { useQuery } from '@tanstack/react-query';
 import { tmdb } from '@lib/tmdb';
 import { useSyncListener, SyncPayload } from '@features/sync/hooks/useSync';
 import { resolveNextMovie } from '../../../utils/movieAutonext';
-import { getEmbedProvider, buildPlayerUrl } from '../../../utils/providers';
+import { getEmbedProvider, buildPlayerUrl, supportsNativeAutonext } from '../../../utils/providers';
 
 export default function EmbedPlayerPage() {
   const [content, setContent] = useState<SyncPayload | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Allow only known provider IDs, never a user-supplied iframe URL.
-  const selectedProvider = getEmbedProvider(new URLSearchParams(window.location.search).get('provider'));
+  const query = new URLSearchParams(window.location.search);
+  const selectedProvider = getEmbedProvider(query.get('provider'));
+  // Explicit opt-in: avoid two independent auto-advance mechanisms racing.
+  const nativeAutonext = query.get('nativeAutonext') === '1' && supportsNativeAutonext(selectedProvider);
   const initializeIframe = useCallback(() => {
     sendEmbedMasterCommand(iframeRef.current, 'mute');
     sendEmbedMasterCommand(iframeRef.current, 'play');
@@ -79,6 +82,8 @@ export default function EmbedPlayerPage() {
         return;
       }
       if (playbackEvent !== 'ended') return;
+      // The provider advances inside its own iframe; never remount it on end.
+      if (nativeAutonext && (content.type === 'tv' || content.type === 'anime')) return;
       ended = true;
       if (content.type === 'movie') handleMovieEnd();
       else {
@@ -88,7 +93,7 @@ export default function EmbedPlayerPage() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [content, getNext, handleMovieEnd, initializeIframe]);
+  }, [content, getNext, handleMovieEnd, initializeIframe, nativeAutonext]);
 
   // Sem conteúdo ainda
   if (!content) {
@@ -131,6 +136,7 @@ export default function EmbedPlayerPage() {
         season: content.season || 1,
         episode: content.episode || 1,
         provider: selectedProvider,
+        nativeAutonext,
         url: content.url ?? undefined
       } as any) || '';
 
