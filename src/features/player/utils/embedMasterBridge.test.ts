@@ -39,6 +39,9 @@ describe('EmbedMaster bridge', () => {
     expect(readEmbeddedPlaybackEvent({ ...event, origin: 'https://vidsrc.tw.evil.test' }, frame)).toBeNull();
     expect(readEmbeddedPlaybackEvent({ ...event, source: {} }, frame)).toBeNull();
     expect(readEmbeddedPlaybackEvent({ ...event, data: { type: 'PLAYER_EVENT', data: { player_status: 'unknown' } } }, frame)).toBeNull();
+    const migratedFrame = { src: 'https://vsembed.ru/embed/tv/1399/1/1?autoplay=1', contentWindow: win } as HTMLIFrameElement;
+    expect(readEmbeddedPlaybackEvent({ ...event, origin: 'https://vsembed.ru' }, migratedFrame)).toBe('ended');
+    expect(readEmbeddedPlaybackEvent(event, migratedFrame)).toBeNull();
   });
 
 });
