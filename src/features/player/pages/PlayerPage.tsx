@@ -1,4 +1,4 @@
-import { sendEmbedMasterCommand, readEmbedMasterEvent, isEmbedMasterUrl } from '../utils/embedMasterBridge';
+import { sendEmbedMasterCommand, readEmbeddedPlaybackEvent, isEmbedMasterUrl } from '../utils/embedMasterBridge';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -66,14 +66,16 @@ export default function PlayerPage() {
       episode,
       provider: selectedProvider,
       title: 'Streamcast',
+      url: state?.url,
     }) || '';
-  }, [type, tmdbId, season, episode, selectedProvider]);
+  }, [type, tmdbId, season, episode, selectedProvider, state?.url]);
 
   const getNext = useCallback((): { season: number; episode: number } | null => {
+    if (!tvDetails || !seasonDetails) return null;
     if (episode < totalEpisodes) return { season, episode: episode + 1 };
     if (season < totalSeasons)  return { season: season + 1, episode: 1 };
     return null;
-  }, [episode, season, totalEpisodes, totalSeasons]);
+  }, [episode, season, totalEpisodes, totalSeasons, tvDetails, seasonDetails]);
 
   const goToNext = useCallback((s: number, e: number) => {
     setSeason(s);
@@ -114,9 +116,13 @@ export default function PlayerPage() {
     setCountdownSeconds(null);
     let hasEnded = false;
     const handleMessage = (event: MessageEvent) => {
-      const message = readEmbedMasterEvent(event, iframeRef.current);
-      if (!message || hasEnded) return;
-      if (message.event === 'ended' || message.event === 'finish' || message.event === 'complete') {
+      const playbackEvent = readEmbeddedPlaybackEvent(event, iframeRef.current);
+      if (!playbackEvent || hasEnded) return;
+      if (playbackEvent === 'ready') {
+        initializeIframe();
+        return;
+      }
+      if (playbackEvent === 'ended') {
         hasEnded = true;
         setCountdownSeconds(null);
         if (type === 'movie') handleMovieEnd();
@@ -125,7 +131,7 @@ export default function PlayerPage() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [type, tmdbId, season, episode, selectedProvider, handleMovieEnd, handleNextManual]);
+  }, [type, tmdbId, season, episode, selectedProvider, handleMovieEnd, handleNextManual, initializeIframe]);
 
   const isSyncedMode = Boolean(state?.synced);
 
