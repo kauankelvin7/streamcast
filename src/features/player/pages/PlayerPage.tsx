@@ -138,6 +138,14 @@ export default function PlayerPage() {
   }, [type, tmdbId, navigate]);
 
 
+  // Also flush the last few seconds when the tab closes or reloads.
+  useEffect(() => {
+    if (!type || !tmdbId) return;
+    const flush = () => saveWatchProgress(type, tmdbId, actualEpisodeRef.current, lastSecondsRef.current);
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, [type, tmdbId]);
+
   // Listen to the exact, verified EmbedMaster iframe window. When its own
   // countdown swaps the episode within that window, record the new episode
   // WITHOUT remounting the iframe (which would break its working autoplay).
