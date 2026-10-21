@@ -15,6 +15,8 @@ export interface VideoSource {
   addedAt?: string;
   tags?: string[];
   provider?: string;
+  /** Native provider episode progression. Only supported for documented VidSrc/vSEmbed providers. */
+  nativeAutonext?: boolean;
 }
 
 export interface NextContentResult {
