@@ -1,14 +1,20 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { sendEmbedMasterCommand, readEmbedMasterEvent } from '../utils/embedMasterBridge';
+import { sendEmbedMasterCommand, readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
 import { useQuery } from '@tanstack/react-query';
 import { tmdb } from '@lib/tmdb';
 import { useSyncListener, SyncPayload } from '@features/sync/hooks/useSync';
 import { resolveNextMovie } from '../../../utils/movieAutonext';
-import { PROVIDERS, buildPlayerUrl } from '../../../utils/providers';
+import { getEmbedProvider, buildPlayerUrl } from '../../../utils/providers';
 
 export default function EmbedPlayerPage() {
   const [content, setContent] = useState<SyncPayload | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  // Allow only known provider IDs, never a user-supplied iframe URL.
+  const selectedProvider = getEmbedProvider(new URLSearchParams(window.location.search).get('provider'));
+  const initializeIframe = useCallback(() => {
+    sendEmbedMasterCommand(iframeRef.current, 'mute');
+    sendEmbedMasterCommand(iframeRef.current, 'play');
+  }, []);
 
   const handleSync = useCallback((payload: SyncPayload) => {
     setContent(payload);
@@ -32,14 +38,14 @@ export default function EmbedPlayerPage() {
   const totalEpisodes = seasonDetails?.episodes?.length ?? 1;
 
   const getNext = useCallback((): { season: number; episode: number } | null => {
-    if (!content || (content.type !== 'tv' && content.type !== 'anime')) return null;
+    if (!content || !tvDetails || !seasonDetails || (content.type !== 'tv' && content.type !== 'anime')) return null;
     const currentSeason = content.season ?? 1;
     const currentEpisode = content.episode ?? 1;
 
     if (currentEpisode < totalEpisodes) return { season: currentSeason, episode: currentEpisode + 1 };
     if (currentSeason < totalSeasons) return { season: currentSeason + 1, episode: 1 };
     return null;
-  }, [content, totalEpisodes, totalSeasons]);
+  }, [content, totalEpisodes, totalSeasons, tvDetails, seasonDetails]);
 
   const handleMovieEnd = useCallback(() => {
     if (!content || content.type !== 'movie') return;
@@ -66,8 +72,13 @@ export default function EmbedPlayerPage() {
     if (!content || content.type === 'youtube') return;
     let ended = false;
     const handleMessage = (event: MessageEvent) => {
-      const message = readEmbedMasterEvent(event, iframeRef.current);
-      if (!message || ended || !['ended', 'finish', 'complete'].includes(message.event)) return;
+      const playbackEvent = readEmbeddedPlaybackEvent(event, iframeRef.current);
+      if (!playbackEvent || ended) return;
+      if (playbackEvent === 'ready') {
+        initializeIframe();
+        return;
+      }
+      if (playbackEvent !== 'ended') return;
       ended = true;
       if (content.type === 'movie') handleMovieEnd();
       else {
@@ -77,7 +88,7 @@ export default function EmbedPlayerPage() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [content, getNext, handleMovieEnd]);
+  }, [content, getNext, handleMovieEnd, initializeIframe]);
 
   // Sem conteúdo ainda
   if (!content) {
@@ -119,14 +130,15 @@ export default function EmbedPlayerPage() {
         tmdb: content.tmdbId,
         season: content.season || 1,
         episode: content.episode || 1,
-        provider: PROVIDERS.VIDSRC_RU
+        provider: selectedProvider,
+        url: content.url ?? undefined
       } as any) || '';
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
       <iframe
         ref={iframeRef}
-        onLoad={() => { sendEmbedMasterCommand(iframeRef.current, 'mute'); sendEmbedMasterCommand(iframeRef.current, 'play'); }}
+        onLoad={initializeIframe}
         key={`${content.tmdbId}-${content.season}-${content.episode}`}
         src={iframeSrc}
         className="embed-iframe"
