@@ -29,7 +29,11 @@ function sendEvent(frame: HTMLIFrameElement, event: string, origin = 'https://em
   });
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  window.history.replaceState(null, '', '/');
+  sessionStorage.removeItem('streamcast-autoplay-diagnostics');
+});
 
 describe('/watch episode-to-episode autoplay', () => {
   it('recreates the iframe, re-sends muted play, and ignores old-frame end messages', () => {
@@ -88,6 +92,18 @@ describe('/watch episode-to-episode autoplay', () => {
     expect(post.mock.calls.length).toBe(count + 4);
     expect(view.container.querySelector('iframe')).toBe(frame);
     post.mockRestore();
+  });
+
+  it('shows a persistent on-screen diagnostic when provider scripts clear the console', () => {
+    window.history.replaceState(null, '', '/watch/tv/1399?autoplayDebug=1');
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    const overlay = view.getByTestId('autoplay-diagnostic');
+    expect(overlay.textContent).toContain('Streamcast media changed');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    expect(overlay.textContent).toContain('Playback confirmed');
+    expect(sessionStorage.getItem('streamcast-autoplay-diagnostics')).toContain('Playback confirmed');
   });
 
 });
