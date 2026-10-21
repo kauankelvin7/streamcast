@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import EmbedPlayerPage from './EmbedPlayerPage';
+import { readWatchProgress } from '../utils/watchProgress';
 
 type SyncData = {
   tmdbId: number; type: 'tv' | 'direct' | 'movie'; title: string;
@@ -63,6 +64,7 @@ function providerEvent(frame: HTMLIFrameElement, origin: string, status: string)
 }
 
 beforeEach(() => {
+  localStorage.clear();
   fake.listener = null;
   fake.queries.length = 0;
   window.history.replaceState(null, '', '/embed');
@@ -153,4 +155,42 @@ describe('EmbedPlayerPage integration', () => {
     expect(video?.autoplay).toBe(true);
     expect(document.querySelector('iframe')).toBeNull();
   });
+  it('preserves EmbedMaster native episode progression and restores after remount', () => {
+    const page = render(<EmbedPlayerPage />);
+    sync(episode);
+    const frame = currentFrame();
+    const send = (name: string) => act(() => {
+      window.dispatchEvent(new MessageEvent('message', {
+        origin: 'https://embdmstrplayer.com', source: frame.contentWindow,
+        data: { source: 'embedmaster_player', event: name },
+      }));
+    });
+    send('play');
+    send('new');
+    expect(currentFrame()).toBe(frame);
+    expect(readWatchProgress('tv', 1399)).toMatchObject({ season: 1, episode: 2 });
+    page.unmount();
+    const reloaded = render(<EmbedPlayerPage />);
+    sync(episode);
+    expect(currentFrame().src).toContain('/tv/1399/1/2?');
+    reloaded.unmount();
+  });
+
+  it('keeps a newer explicit Firebase sync authoritative over saved progress', () => {
+    const old = render(<EmbedPlayerPage />);
+    sync(episode);
+    const frame = currentFrame();
+    act(() => window.dispatchEvent(new MessageEvent('message', {
+      origin: 'https://embdmstrplayer.com', source: frame.contentWindow,
+      data: { source: 'embedmaster_player', event: 'time', info: 120 },
+    })));
+    expect(readWatchProgress('tv', 1399)?.seconds).toBe(120);
+    old.unmount();
+    const fresh = render(<EmbedPlayerPage />);
+    sync({ ...episode, startedAt: Date.now() + 5000, episode: 1 });
+    expect(currentFrame().src).toContain('/tv/1399/1/1?');
+    expect(readWatchProgress('tv', 1399)?.seconds).toBe(0);
+    fresh.unmount();
+  });
+
 });
