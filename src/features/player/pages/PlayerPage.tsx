@@ -49,20 +49,6 @@ export default function PlayerPage() {
     enabled: (type === 'tv' || type === 'anime') && !!season,
   });
 
-  // Busca detalhes específicos do episódio (para capturar runtime exato do episódio atual)
-  const { data: episodeDetails } = useQuery({
-    queryKey: ['tv', tmdbId, 'season', season, 'episode', episode],
-    queryFn: () => tmdb.getTVEpisodeDetails(Number(tmdbId), season, episode),
-    enabled: (type === 'tv' || type === 'anime') && !!tmdbId && !!season && !!episode,
-  });
-
-  // Busca detalhes do Filme (para pegar runtime exato em minutos)
-  const { data: movieDetails } = useQuery({
-    queryKey: ['movie', tmdbId],
-    queryFn: () => tmdb.getMovieDetails(Number(tmdbId)),
-    enabled: type === 'movie' && !!tmdbId,
-  });
-
   const totalSeasons  = tvDetails?.number_of_seasons ?? 1;
   const totalEpisodes = seasonDetails?.episodes?.length ?? 1;
 
