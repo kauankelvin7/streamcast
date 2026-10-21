@@ -113,6 +113,14 @@ export default function EmbedPlayerPage() {
     if (remountPlayer) setLoadedPosition(next);
   }, [content]);
 
+  // Flush the latest observed seconds on refresh, without shared Firebase writes.
+  useEffect(() => {
+    if (!content || (content.type !== 'tv' && content.type !== 'anime' && content.type !== 'movie')) return;
+    const flush = () => saveWatchProgress(content.type, content.tmdbId, actualPositionRef.current, lastSavedSecondsRef.current);
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, [content?.type, content?.tmdbId]);
+
   // Capture ProviderJS time and native episode switches within the same iframe.
   // This route is often kept open for many hours, so the Firebase initial
   // episode is NOT an accurate measure of the current playback episode.
