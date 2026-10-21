@@ -27,6 +27,11 @@ export function getEmbedProvider(id: string | null): ProviderName {
     : PROVIDERS.VIDSRC_RU;
 }
 
+/** Official VidSrc/vSEmbed documented support for their own TV autonext UI. */
+export function supportsNativeAutonext(provider: string): boolean {
+  return provider === PROVIDERS.VIDSRC_TW || provider === PROVIDERS.VIDSRC_ME;
+}
+
 export function buildPlayerUrl(video: VideoSource): string {
   if (!video) return '';
 
@@ -43,7 +48,7 @@ export function buildPlayerUrl(video: VideoSource): string {
       ? `https://vidsrc.tw/embed/tv/${id}/${season}/${episode}`
       : `https://vidsrc.tw/embed/movie/${id}`);
     url.searchParams.set('autoplay', '1');
-    if (isSeries) url.searchParams.set('autonext', '0');
+    if (isSeries) url.searchParams.set('autonext', video.nativeAutonext === true ? '1' : '0');
     return url.toString();
   }
 
@@ -62,7 +67,7 @@ export function buildPlayerUrl(video: VideoSource): string {
       ? `https://vsembed.ru/embed/tv/${id}/${season}/${episode}`
       : `https://vsembed.ru/embed/movie/${id}`);
     url.searchParams.set('autoplay', '1');
-    if (isSeries) url.searchParams.set('autonext', '0');
+    if (isSeries) url.searchParams.set('autonext', video.nativeAutonext === true ? '1' : '0');
     return url.toString();
   }
 
