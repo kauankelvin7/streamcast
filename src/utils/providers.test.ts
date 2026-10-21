@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { PROVIDERS, getEmbedProvider, buildPlayerUrl } from './providers';
+import { PROVIDERS, getEmbedProvider, buildPlayerUrl, supportsNativeAutonext } from './providers';
 
 const video = {
   id: '1399', tmdb: '1399', type: 'tv' as const,
@@ -36,4 +36,18 @@ describe('provider URL and embed selection', () => {
     expect(buildPlayerUrl({ title: 'Video', id: 'video', type: 'direct', url: 'https://cdn.example.com/movie.mp4' }))
       .toBe('https://cdn.example.com/movie.mp4');
   });
+  it('opts into provider-native autoplay only for documented VidSrc/vSEmbed', () => {
+    for (const provider of [PROVIDERS.VIDSRC_TW, PROVIDERS.VIDSRC_ME]) {
+      expect(supportsNativeAutonext(provider)).toBe(true);
+      const url = new URL(buildPlayerUrl({ ...video, provider, nativeAutonext: true }));
+      expect(url.searchParams.get('autoplay')).toBe('1');
+      expect(url.searchParams.get('autonext')).toBe('1');
+      expect(new URL(buildPlayerUrl({ ...video, provider })).searchParams.get('autonext')).toBe('0');
+    }
+    for (const provider of [PROVIDERS.VIDSRC_CC, PROVIDERS.SUPEREMBED, PROVIDERS.TWO_EMBED, PROVIDERS.VIDSRC_RU]) {
+      expect(supportsNativeAutonext(provider)).toBe(false);
+      expect(buildPlayerUrl({ ...video, provider, nativeAutonext: true })).not.toContain('autonext=1');
+    }
+  });
+
 });
