@@ -5,7 +5,7 @@ export const PROVIDERS = {
   VIDSRC_RU: 'VidSrc / EmbedMaster',
   VIDSRC_CC: 'VidSrc CC (Ultra HD)',
   VIDSRC_TW: 'VidSrc TW (eventos documentados)',
-  VIDSRC_ME: 'VidSrc Me',
+  VIDSRC_ME: 'VidSrc Me / vsembed.ru',
   SUPEREMBED: 'SuperEmbed (Multi)',
   TWO_EMBED: '2Embed VIP',
 } as const;
@@ -55,12 +55,15 @@ export function buildPlayerUrl(video: VideoSource): string {
     return `https://vidsrc.cc/v2/embed/movie/${id}?autoPlay=true`;
   }
 
-  // 2. Provedor VidSrc Me
+  // 2. VidSrc Me officially announced migration to vsembed.ru/vsembed.su.
+  // Use the documented vSEmbed URLs/events; keep autonext under Streamcast control.
   if (provider === PROVIDERS.VIDSRC_ME) {
-    if (isSeries) {
-      return `https://vidsrc.me/embed/tv?tmdb=${id}&season=${season}&episode=${episode}&autoplay=1`;
-    }
-    return `https://vidsrc.me/embed/movie?tmdb=${id}&autoplay=1`;
+    const url = new URL(isSeries
+      ? `https://vsembed.ru/embed/tv/${id}/${season}/${episode}`
+      : `https://vsembed.ru/embed/movie/${id}`);
+    url.searchParams.set('autoplay', '1');
+    if (isSeries) url.searchParams.set('autonext', '0');
+    return url.toString();
   }
 
   // 3. Provedor SuperEmbed (MultiEmbed)
