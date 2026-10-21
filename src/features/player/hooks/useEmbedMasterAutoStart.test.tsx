@@ -15,10 +15,10 @@ function Harness({ episode }: { episode: number }) {
     title="player"
   />;
 }
-function sendEvent(frame: HTMLIFrameElement, event: string) {
+function sendEvent(frame: HTMLIFrameElement, event: string, origin = 'https://embedmaster.link') {
   act(() => {
     window.dispatchEvent(new MessageEvent('message', {
-      origin: 'https://embedmaster.link',
+      origin,
       source: frame.contentWindow,
       data: { source: 'embedmaster_player', event },
     }));
@@ -42,13 +42,16 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
       1, { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link'
     );
     expect(post).toHaveBeenNthCalledWith(
-      2, { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link'
+      2, { source: 'embedmaster_player_command', command: 'mute' }, 'https://embdmstrplayer.com'
+    );
+    expect(post).toHaveBeenNthCalledWith(
+      4, { source: 'embedmaster_player_command', command: 'play' }, 'https://embdmstrplayer.com'
     );
     act(() => vi.advanceTimersByTime(700));
-    expect(post).toHaveBeenCalledTimes(4);
+    expect(post).toHaveBeenCalledTimes(8);
     sendEvent(frame, 'play');
     act(() => vi.advanceTimersByTime(20000));
-    expect(post).toHaveBeenCalledTimes(4);
+    expect(post).toHaveBeenCalledTimes(8);
     post.mockRestore();
   });
 
@@ -73,7 +76,7 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     act(() => vi.advanceTimersByTime(20000));
     expect(next).toHaveBeenCalledTimes(calls);
     // Old iframe never receives any retry from the new media lifecycle.
-    expect(old).toHaveBeenCalledTimes(2);
+    expect(old).toHaveBeenCalledTimes(4);
     next.mockRestore();
     old.mockRestore();
   });
@@ -91,7 +94,7 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
       }));
     });
     act(() => vi.advanceTimersByTime(700));
-    expect(post).toHaveBeenCalledTimes(4);
+    expect(post).toHaveBeenCalledTimes(8);
     sendEvent(frame, 'play');
     sendEvent(frame, 'userpause');
     const calls = post.mock.calls.length;
@@ -107,7 +110,7 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     const post = vi.spyOn(frame.contentWindow!, 'postMessage');
     fireEvent.load(frame);
     act(() => vi.advanceTimersByTime(60000));
-    expect(post).toHaveBeenCalledTimes(10);
+    expect(post).toHaveBeenCalledTimes(20);
     post.mockRestore();
   });
   it('rearms muted autoplay for a provider-native NEXT without React changing the iframe', () => {
@@ -121,11 +124,13 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     sendEvent(frame, 'next');
     act(() => vi.advanceTimersByTime(800));
     expect(view.container.querySelector('iframe')).toBe(frame);
-    expect(post).toHaveBeenCalledTimes(afterFirst + 2);
+    expect(post).toHaveBeenCalledTimes(afterFirst + 4);
     expect(post).toHaveBeenNthCalledWith(afterFirst + 1,
       { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link');
-    expect(post).toHaveBeenNthCalledWith(afterFirst + 2,
+    expect(post).toHaveBeenNthCalledWith(afterFirst + 3,
       { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link');
+    expect(post).toHaveBeenNthCalledWith(afterFirst + 4,
+      { source: 'embedmaster_player_command', command: 'play' }, 'https://embdmstrplayer.com');
     sendEvent(frame, 'play');
     const confirmed = post.mock.calls.length;
     act(() => vi.advanceTimersByTime(20000));
@@ -141,7 +146,7 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     sendEvent(frame, 'play');
     const before = post.mock.calls.length;
     sendEvent(frame, 'new');
-    expect(post).toHaveBeenCalledTimes(before + 2);
+    expect(post).toHaveBeenCalledTimes(before + 4);
     expect(view.container.querySelector('iframe')).toBe(frame);
     post.mockRestore();
   });
@@ -154,7 +159,7 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     sendEvent(frame, 'end');
     const before = post.mock.calls.length;
     fireEvent.load(frame);
-    expect(post).toHaveBeenCalledTimes(before + 2);
+    expect(post).toHaveBeenCalledTimes(before + 4);
     post.mockRestore();
   });
 
@@ -186,6 +191,21 @@ describe('EmbedMaster muted autoplay after changing episodes', () => {
     })));
     act(() => vi.advanceTimersByTime(20000));
     expect(post).toHaveBeenCalledTimes(before);
+    post.mockRestore();
+  });
+
+  it('handles real redirected EmbedMaster event origin on internal autoplay transition', () => {
+    const view = render(<Harness episode={1} />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    const before = post.mock.calls.length;
+    sendEvent(frame, 'new', 'https://embdmstrplayer.com');
+    expect(post.mock.calls.length).toBe(before + 4);
+    expect(post).toHaveBeenCalledWith(
+      { source: 'embedmaster_player_command', command: 'play' }, 'https://embdmstrplayer.com'
+    );
     post.mockRestore();
   });
 
