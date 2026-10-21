@@ -1,3 +1,11 @@
+/** Provider documented options: bypass welcome screen and request automatic playback. */
+export function withEmbedMasterAutoplay(url: string): string {
+  const parsed = new URL(url);
+  parsed.searchParams.set('welcome_page', 'off');
+  parsed.searchParams.set('autoplay', 'on');
+  return parsed.toString();
+}
+
 type MovieUrlOptions = {
   imdb?: string;
   tmdb?: string | number;
@@ -39,7 +47,7 @@ export function buildMovieUrl(opts: MovieUrlOptions): string {
     url = `${base}/${opts.tmdb}`;
   }
   
-  return url;
+  return withEmbedMasterAutoplay(url);
 }
 
 /**
@@ -99,5 +107,5 @@ export function buildEpisodeUrl(opts: EpisodeUrlOptions): string {
     url = `${base}/${opts.tmdb}/${opts.season}/${opts.episode}`;
   }
   
-  return url;
+  return withEmbedMasterAutoplay(url);
 }
