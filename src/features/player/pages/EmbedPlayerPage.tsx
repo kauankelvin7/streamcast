@@ -136,6 +136,17 @@ export default function EmbedPlayerPage() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
+      {content.type === 'direct' && content.url ? (
+        <video
+          key={content.url}
+          src={content.url}
+          autoPlay
+          muted
+          playsInline
+          controls
+          style={{ width: '100%', height: '100%', background: '#000' }}
+        />
+      ) : (
       <iframe
         ref={iframeRef}
         onLoad={initializeIframe}
@@ -147,6 +158,7 @@ export default function EmbedPlayerPage() {
         allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
         referrerPolicy="strict-origin-when-cross-origin"
       />
+      )}
     </div>
   );
 }
