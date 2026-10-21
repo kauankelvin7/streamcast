@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { sendEmbedMasterCommand, readEmbedMasterEvent } from '../utils/embedMasterBridge';
 import { useQuery } from '@tanstack/react-query';
 import { tmdb } from '@lib/tmdb';
 import { useSyncListener, SyncPayload } from '@features/sync/hooks/useSync';
@@ -7,6 +8,7 @@ import { PROVIDERS, buildPlayerUrl } from '../../../utils/providers';
 
 export default function EmbedPlayerPage() {
   const [content, setContent] = useState<SyncPayload | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   const handleSync = useCallback((payload: SyncPayload) => {
     setContent(payload);
@@ -59,34 +61,23 @@ export default function EmbedPlayerPage() {
     })();
   }, [content]);
 
-  // Autonext Inteligente por tempo do conteúdo para embeds
+  // Advance only when the actual provider reports media end, never by wall-clock.
   useEffect(() => {
     if (!content || content.type === 'youtube') return;
-
-    let durationMins = 45;
-    if (content.type === 'movie') {
-      durationMins = 110;
-    } else if (tvDetails?.episode_run_time && tvDetails.episode_run_time.length > 0) {
-      durationMins = tvDetails.episode_run_time[0];
-    }
-
-    const timer = setTimeout(() => {
-      if (content.type === 'movie') {
-        handleMovieEnd();
-      } else {
+    let ended = false;
+    const handleMessage = (event: MessageEvent) => {
+      const message = readEmbedMasterEvent(event, iframeRef.current);
+      if (!message || ended || !['ended', 'finish', 'complete'].includes(message.event)) return;
+      ended = true;
+      if (content.type === 'movie') handleMovieEnd();
+      else {
         const next = getNext();
-        if (next) {
-          setContent({
-            ...content,
-            season: next.season,
-            episode: next.episode,
-          });
-        }
+        if (next) setContent(previous => previous ? { ...previous, season: next.season, episode: next.episode } : previous);
       }
-    }, durationMins * 60 * 1000);
-
-    return () => clearTimeout(timer);
-  }, [content, tvDetails, getNext, handleMovieEnd]);
+    };
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [content, getNext, handleMovieEnd]);
 
   // Sem conteúdo ainda
   if (!content) {
@@ -121,7 +112,7 @@ export default function EmbedPlayerPage() {
 
   // URL do provedor principal Vidsrc RU (Recomendado)
   const iframeSrc = content.type === 'youtube'
-    ? `https://www.youtube-nocookie.com/embed/${content.tmdbId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`
+    ? `https://www.youtube-nocookie.com/embed/${content.tmdbId}?autoplay=1&mute=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`
     : buildPlayerUrl({
         type: content.type as any,
         id: String(content.tmdbId),
@@ -134,6 +125,8 @@ export default function EmbedPlayerPage() {
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
       <iframe
+        ref={iframeRef}
+        onLoad={() => { sendEmbedMasterCommand(iframeRef.current, 'mute'); sendEmbedMasterCommand(iframeRef.current, 'play'); }}
         key={`${content.tmdbId}-${content.season}-${content.episode}`}
         src={iframeSrc}
         className="embed-iframe"
