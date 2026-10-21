@@ -1,3 +1,4 @@
+import { sendEmbedMasterCommand, readEmbedMasterEvent, isEmbedMasterUrl } from '../utils/embedMasterBridge';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -27,52 +28,12 @@ export default function PlayerPage() {
   const [selectedProvider, setSelectedProvider] = useState<string>(PROVIDERS.VIDSRC_RU);
   const [showProviderMenu, setShowProviderMenu] = useState(false);
 
-  // Simula clique de mouse e foco programático diretamente no centro do iframe para disparar o player sem intervenção humana
-  const autoClickIframe = useCallback(() => {
-    const iframe = iframeRef.current;
-    if (!iframe) return;
-
-    try {
-      iframe.focus();
-      const rect = iframe.getBoundingClientRect();
-      const x = rect.left + rect.width / 2;
-      const y = rect.top + rect.height / 2;
-
-      const opts = {
-        view: window,
-        bubbles: true,
-        cancelable: true,
-        clientX: x,
-        clientY: y,
-        screenX: x,
-        screenY: y,
-      };
-
-      iframe.dispatchEvent(new PointerEvent('pointerdown', opts));
-      iframe.dispatchEvent(new MouseEvent('mousedown', opts));
-      iframe.dispatchEvent(new PointerEvent('pointerup', opts));
-      iframe.dispatchEvent(new MouseEvent('mouseup', opts));
-      iframe.dispatchEvent(new MouseEvent('click', opts));
-
-      // PostMessage de backup
-      iframe.contentWindow?.postMessage({ type: 'play' }, '*');
-      iframe.contentWindow?.postMessage({ event: 'play' }, '*');
-      iframe.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'playVideo', args: '' }), '*');
-    } catch (_) {}
+  // Only send documented commands to the supported, origin-checked provider.
+  const initializeIframe = useCallback(() => {
+    if (!isEmbedMasterUrl(iframeRef.current?.src || '')) return;
+    sendEmbedMasterCommand(iframeRef.current, 'mute');
+    sendEmbedMasterCommand(iframeRef.current, 'play');
   }, []);
-
-  // Sequência de disparos automáticos ao trocar de mídia/episódio
-  useEffect(() => {
-    const t1 = setTimeout(autoClickIframe, 300);
-    const t2 = setTimeout(autoClickIframe, 900);
-    const t3 = setTimeout(autoClickIframe, 1800);
-
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-      clearTimeout(t3);
-    };
-  }, [tmdbId, season, episode, selectedProvider, autoClickIframe]);
 
   // Busca detalhes de Séries
   const { data: tvDetails } = useQuery({
@@ -108,7 +69,7 @@ export default function PlayerPage() {
   // ── LÓGICA CENTRALIZADA DA URL DO IFRAME ──
   const currentVideoSrc = useMemo(() => {
     if (type === 'youtube') {
-      return `https://www.youtube-nocookie.com/embed/${tmdbId}?autoplay=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`;
+      return `https://www.youtube-nocookie.com/embed/${tmdbId}?autoplay=1&mute=1&enablejsapi=1&rel=0&modestbranding=1&playsinline=1`;
     }
     
     return buildPlayerUrl({
@@ -160,87 +121,25 @@ export default function PlayerPage() {
   }, [type, tmdbId, navigate]);
 
 
-  // Tempo de execução exato obtido do TMDB (em minutos -> convertido para segundos)
-  const exactRuntimeSeconds = useMemo(() => {
-    if (type === 'movie') {
-      return (movieDetails?.runtime || 110) * 60;
-    }
-    const currentEp = seasonDetails?.episodes?.find((e: { episode_number: number }) => e.episode_number === episode);
-    const mins = episodeDetails?.runtime || currentEp?.runtime || tvDetails?.episode_run_time?.[0] || 50;
-    return mins * 60;
-  }, [type, movieDetails, seasonDetails, episodeDetails, episode, tvDetails]);
-
-  // Ref para controlar o tempo de reprodução decorrido
-  const elapsedRef = useRef(0);
-
-  // Monitoramento duplo: escuta postMessage do iframe + contador do runtime exato
+  // Never advance by TMDB runtime alone: wall-clock time includes buffering and pauses.
+  // Only events from the active, verified player can end a video.
   useEffect(() => {
     if (type === 'youtube') return;
     setCountdownSeconds(null);
-    elapsedRef.current = 0;
-
     let hasEnded = false;
-
-    const triggerNext = () => {
-      if (hasEnded) return;
-      hasEnded = true;
-      setCountdownSeconds(null);
-      if (type === 'movie') {
-        handleMovieEnd();
-      } else {
-        handleNextManual();
-      }
-    };
-
-    // 1. Escuta eventos postMessage em tempo real do player (Vidsrc RU / JW / HTML5)
     const handleMessage = (event: MessageEvent) => {
-      try {
-        let data = event.data;
-        if (typeof data === 'string') {
-          try { data = JSON.parse(data); } catch (_) {}
-        }
-        if (!data) return;
-
-        const eventType = data.event || data.type || data.status;
-        const cTime = data.currentTime ?? data.time ?? data.position ?? data.seconds ?? data.cTime ?? data.data?.currentTime ?? data.data?.time;
-        const dur = data.duration ?? data.totalTime ?? data.length ?? data.dTime ?? data.data?.duration;
-
-        if (eventType === 'ended' || eventType === 'finish' || eventType === 'complete' || (data.event === 'onStateChange' && data.data === 0)) {
-          triggerNext();
-          return;
-        }
-
-        if (typeof cTime === 'number' && typeof dur === 'number' && dur > 0) {
-          const remaining = dur - cTime;
-          if (remaining <= 15 && remaining > 0) {
-            setCountdownSeconds(Math.ceil(remaining));
-          } else if (remaining <= 0) {
-            triggerNext();
-          }
-        }
-      } catch (_) {}
-    };
-
-    window.addEventListener('message', handleMessage);
-
-    // 2. Ticker de backup com base na duração exata retornada pelo TMDB
-    const interval = setInterval(() => {
-      elapsedRef.current += 1;
-      const remaining = exactRuntimeSeconds - elapsedRef.current;
-
-      if (remaining <= 15 && remaining > 0) {
-        setCountdownSeconds(remaining);
-      } else if (remaining <= 0) {
-        clearInterval(interval);
-        triggerNext();
+      const message = readEmbedMasterEvent(event, iframeRef.current);
+      if (!message || hasEnded) return;
+      if (message.event === 'ended' || message.event === 'finish' || message.event === 'complete') {
+        hasEnded = true;
+        setCountdownSeconds(null);
+        if (type === 'movie') handleMovieEnd();
+        else handleNextManual();
       }
-    }, 1000);
-
-    return () => {
-      window.removeEventListener('message', handleMessage);
-      clearInterval(interval);
     };
-  }, [type, tmdbId, season, episode, exactRuntimeSeconds, handleNextManual, handleMovieEnd]);
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [type, tmdbId, season, episode, selectedProvider, handleMovieEnd, handleNextManual]);
 
   const isSyncedMode = Boolean(state?.synced);
 
@@ -456,7 +355,7 @@ export default function PlayerPage() {
         key={`${tmdbId}-${season}-${episode}-${selectedProvider}`}
         src={currentVideoSrc}
         className="embed-iframe"
-        onLoad={autoClickIframe}
+        onLoad={initializeIframe}
         style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0, zIndex: 0, willChange: 'transform', transform: 'translateZ(0)' }}
         allowFullScreen
         allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
