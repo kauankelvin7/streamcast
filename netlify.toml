@@ -6,3 +6,10 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# Isolar auditoria: nenhum branch deploy/preview deste trabalho.
+[context."audit/autoplay-20261021"]
+  ignore = "exit 0"
+
+[context.deploy-preview]
+  ignore = "exit 0"
