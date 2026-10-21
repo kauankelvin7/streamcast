@@ -142,4 +142,17 @@ describe('/watch episode-to-episode autoplay', () => {
     restored.unmount();
   });
 
+  it('remembers the most recent episode after several automatic transitions', () => {
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    sendEvent(frame, 'new', 'https://embdmstrplayer.com');
+    expect(readWatchProgress('tv', '1399')).toMatchObject({ season: 3, episode: 2 });
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    sendEvent(frame, 'new', 'https://embdmstrplayer.com');
+    // A duplicate transition within a few seconds is ignored, not counted twice.
+    expect(readWatchProgress('tv', '1399')).toMatchObject({ season: 3, episode: 2 });
+    view.unmount();
+  });
+
 });
