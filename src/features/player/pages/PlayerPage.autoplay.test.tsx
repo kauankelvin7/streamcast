@@ -57,4 +57,22 @@ describe('/watch episode-to-episode autoplay', () => {
     post1.mockRestore();
     post2.mockRestore();
   });
+  it('calls mute and play again after the provider changes episode internally via new', () => {
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play');
+    const initialCommands = post.mock.calls.length;
+    // Provider-native autoplay countdown changes the video without changing React state.
+    sendEvent(frame, 'new');
+    expect(view.container.querySelector('iframe')).toBe(frame);
+    expect(post).toHaveBeenCalledTimes(initialCommands + 2);
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 1,
+      { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link');
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 2,
+      { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link');
+    post.mockRestore();
+  });
+
 });
