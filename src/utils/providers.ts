@@ -22,7 +22,9 @@ export const EMBED_PROVIDER_BY_ID: Record<string, ProviderName> = {
   '2embed': PROVIDERS.TWO_EMBED,
 };
 export function getEmbedProvider(id: string | null): ProviderName {
-  return (id && EMBED_PROVIDER_BY_ID[id]) || PROVIDERS.VIDSRC_RU;
+  return id && Object.prototype.hasOwnProperty.call(EMBED_PROVIDER_BY_ID, id)
+    ? EMBED_PROVIDER_BY_ID[id]
+    : PROVIDERS.VIDSRC_RU;
 }
 
 export function buildPlayerUrl(video: VideoSource): string {
