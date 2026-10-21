@@ -41,7 +41,7 @@ export function readEmbeddedPlaybackEvent(
     return null;
   }
 
-  if (origin === 'https://vidsrc.tw') {
+  if (origin === 'https://vidsrc.tw' || origin === 'https://vsembed.ru') {
     const data = event.data;
     if (!data || typeof data !== 'object' || data.type !== 'PLAYER_EVENT'
       || !data.data || typeof data.data !== 'object') return null;
