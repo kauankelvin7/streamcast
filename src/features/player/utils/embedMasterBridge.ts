@@ -9,11 +9,13 @@ const TRUSTED_EMBEDMASTER_ORIGINS = [EMBEDMASTER_ORIGIN, EMBEDMASTER_PLAYER_ORIG
 export const isEmbedMasterUrl = (url: string) => {
   try { return new URL(url).origin === EMBEDMASTER_ORIGIN; } catch { return false; }
 };
-export function sendEmbedMasterCommand(frame: HTMLIFrameElement | null, command: 'mute' | 'play') {
+export function sendEmbedMasterCommand(frame: HTMLIFrameElement | null, command: 'mute' | 'play' | 'seek', value?: number) {
   if (!frame?.contentWindow || !isEmbedMasterUrl(frame.src)) return;
   // Only ONE origin matches the current document; the other gets discarded by
   // the browser. Never broadcast to "*" or a third-party ad/streaming origin.
-  const payload = { source: 'embedmaster_player_command', command };
+  const payload = value === undefined
+    ? { source: 'embedmaster_player_command', command }
+    : { source: 'embedmaster_player_command', command, value };
   for (const origin of TRUSTED_EMBEDMASTER_ORIGINS) {
     frame.contentWindow.postMessage(payload, origin);
   }

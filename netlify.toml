@@ -1,7 +1,7 @@
 [build]
   command = "npm run build"
   publish = "dist"
-  ignore = "if [ \"$BRANCH\" = \"audit/autoplay-20261021\" ] || [ \"$BRANCH\" = \"fix/embedmaster-episode-autoplay-20261021\" ] || [ \"$BRANCH\" = \"fix/embedmaster-native-next-autoplay-20261021\" ] || [ \"$BRANCH\" = \"fix/embedmaster-player-redirect-origin-20261021\" ]; then exit 0; else exit 1; fi"
+  ignore = "if [ \"$BRANCH\" = \"audit/autoplay-20261021\" ] || [ \"$BRANCH\" = \"fix/embedmaster-episode-autoplay-20261021\" ] || [ \"$BRANCH\" = \"fix/embedmaster-native-next-autoplay-20261021\" ] || [ \"$BRANCH\" = \"fix/embedmaster-player-redirect-origin-20261021\" ] || [ \"$BRANCH\" = \"feat/remember-watch-progress-20261021\" ]; then exit 0; else exit 1; fi"
 
 [[redirects]]
   from = "/*"

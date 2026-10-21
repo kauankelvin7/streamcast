@@ -1,4 +1,5 @@
-import { readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
+import { readEmbedMasterEvent, readEmbeddedPlaybackEvent, sendEmbedMasterCommand } from '../utils/embedMasterBridge';
+import { readWatchProgress, saveWatchProgress, readPlayerTime, nextEpisode } from '../utils/watchProgress';
 import { useEmbedMasterAutoStart } from '../hooks/useEmbedMasterAutoStart';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
@@ -16,8 +17,30 @@ export default function PlayerPage() {
   const navigate          = useNavigate();
   const state             = location.state as { season?: number; episode?: number; synced?: boolean; url?: string } | null;
 
-  const [season, setSeason]   = useState(state?.season ?? 1);
-  const [episode, setEpisode] = useState(state?.episode ?? 1);
+  // Browser-local checkpoint survives refresh and a closed tab. An explicit
+  // ?startOver=1 opts out; WatchParty synchronisation remains authoritative.
+  const stored = useMemo(
+    () => state?.synced || new URLSearchParams(window.location.search).get('startOver') === '1'
+      ? null : readWatchProgress(type ?? '', tmdbId ?? ''),
+    [type, tmdbId, state?.synced],
+  );
+  const initial = {
+    season: stored?.season ?? state?.season ?? 1,
+    episode: stored?.episode ?? state?.episode ?? 1,
+  };
+  const [season, setSeason] = useState(initial.season);
+  const [episode, setEpisode] = useState(initial.episode);
+  // PlayerURL must NOT change for a native provider next/new; otherwise it
+  // destroys the iframe mid-autoplay. Manual navigation updates both values.
+  const [loadedEpisode, setLoadedEpisode] = useState(initial);
+  const actualEpisodeRef = useRef(initial);
+  const lastSecondsRef = useRef(stored?.seconds ?? 0);
+  const lastSaveRef = useRef(stored?.seconds ?? 0);
+  const resumeRef = useRef(stored?.seconds ?? 0);
+  const seekSentRef = useRef(false);
+  const seekGraceUntilRef = useRef(0);
+  const playedBeforeTransitionRef = useRef(false);
+  const lastNativeTransitionRef = useRef(0);
   const [countdownSeconds, setCountdownSeconds] = useState<number | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -31,7 +54,7 @@ export default function PlayerPage() {
 
   const { requestPlayback, lastDiagnostic } = useEmbedMasterAutoStart(
     iframeRef,
-    `${type}:${tmdbId}:${season}:${episode}:${selectedProvider}`,
+    `${type}:${tmdbId}:${loadedEpisode.season}:${loadedEpisode.episode}:${selectedProvider}`,
   );
 
   // Busca detalhes de Séries
@@ -61,26 +84,33 @@ export default function PlayerPage() {
       type: type as any,
       id: tmdbId || '',
       tmdb: tmdbId || '',
-      season,
-      episode,
+      season: loadedEpisode.season,
+      episode: loadedEpisode.episode,
       provider: selectedProvider,
       title: 'Streamcast',
       url: state?.url,
     }) || '';
-  }, [type, tmdbId, season, episode, selectedProvider, state?.url]);
+  }, [type, tmdbId, loadedEpisode, selectedProvider, state?.url]);
 
   const getNext = useCallback((): { season: number; episode: number } | null => {
     if (!tvDetails || !seasonDetails) return null;
-    if (episode < totalEpisodes) return { season, episode: episode + 1 };
-    if (season < totalSeasons)  return { season: season + 1, episode: 1 };
-    return null;
+    return nextEpisode(actualEpisodeRef.current, totalEpisodes, totalSeasons);
   }, [episode, season, totalEpisodes, totalSeasons, tvDetails, seasonDetails]);
 
   const goToNext = useCallback((s: number, e: number) => {
+    const position = { season: s, episode: e };
+    actualEpisodeRef.current = position;
+    lastSecondsRef.current = 0;
+    lastSaveRef.current = 0;
+    resumeRef.current = 0;
+    seekSentRef.current = false;
+    playedBeforeTransitionRef.current = false;
     setSeason(s);
     setEpisode(e);
+    setLoadedEpisode(position);
+    if (type && tmdbId) saveWatchProgress(type, tmdbId, position);
     setCountdownSeconds(null);
-  }, []);
+  }, [type, tmdbId]);
 
   function goPrev() {
     if (episode > 1) goToNext(season, episode - 1);
@@ -107,6 +137,72 @@ export default function PlayerPage() {
     })();
   }, [type, tmdbId, navigate]);
 
+
+  // Also flush the last few seconds when the tab closes or reloads.
+  useEffect(() => {
+    if (!type || !tmdbId) return;
+    const flush = () => saveWatchProgress(type, tmdbId, actualEpisodeRef.current, lastSecondsRef.current);
+    window.addEventListener('pagehide', flush);
+    return () => window.removeEventListener('pagehide', flush);
+  }, [type, tmdbId]);
+
+  // Listen to the exact, verified EmbedMaster iframe window. When its own
+  // countdown swaps the episode within that window, record the new episode
+  // WITHOUT remounting the iframe (which would break its working autoplay).
+  useEffect(() => {
+    if ((type !== 'tv' && type !== 'anime' && type !== 'movie') || !tmdbId) return;
+    const onProgressMessage = (event: MessageEvent) => {
+      const message = readEmbedMasterEvent(event, iframeRef.current);
+      if (!message) return;
+
+      if (message.event === 'play' || message.event === 'start') {
+        playedBeforeTransitionRef.current = true;
+      }
+
+      if ((message.event === 'next' || message.event === 'new')
+        && (type === 'tv' || type === 'anime')
+        && playedBeforeTransitionRef.current
+        && Date.now() - lastNativeTransitionRef.current > 3000) {
+        const next = getNext();
+        if (next) {
+          lastNativeTransitionRef.current = Date.now();
+          playedBeforeTransitionRef.current = false;
+          actualEpisodeRef.current = next;
+          lastSecondsRef.current = 0;
+          lastSaveRef.current = 0;
+          resumeRef.current = 0;
+          seekSentRef.current = false;
+          saveWatchProgress(type, tmdbId, next);
+          setSeason(next.season);
+          setEpisode(next.episode);
+          // Do not setLoadedEpisode: the provider already changed internally.
+        }
+      }
+
+      if (message.event !== 'time') return;
+      const seconds = readPlayerTime(message.info);
+      if (seconds === null) return;
+
+      // Resume within the same episode only; wait for an actual player time
+      // event instead of blindly seeking before media metadata is available.
+      const savedSeconds = resumeRef.current;
+      if (!seekSentRef.current && savedSeconds >= 30 && seconds < savedSeconds - 8 && seconds < 20) {
+        seekSentRef.current = true;
+        seekGraceUntilRef.current = Date.now() + 12000;
+        sendEmbedMasterCommand(iframeRef.current, 'seek', Math.floor(savedSeconds));
+        return;
+      }
+      if (savedSeconds >= 30 && seconds < savedSeconds - 10 && Date.now() < seekGraceUntilRef.current) return;
+      resumeRef.current = 0;
+      lastSecondsRef.current = seconds;
+      if (Math.abs(seconds - lastSaveRef.current) >= 5) {
+        lastSaveRef.current = seconds;
+        saveWatchProgress(type, tmdbId, actualEpisodeRef.current, seconds);
+      }
+    };
+    window.addEventListener('message', onProgressMessage);
+    return () => window.removeEventListener('message', onProgressMessage);
+  }, [type, tmdbId, getNext, loadedEpisode]);
 
   // Never advance by TMDB runtime alone: wall-clock time includes buffering and pauses.
   // Only events from the active, verified player can end a video.
@@ -361,7 +457,7 @@ export default function PlayerPage() {
       ) : (
       <iframe
         ref={iframeRef}
-        key={`${tmdbId}-${season}-${episode}-${selectedProvider}`}
+        key={`${tmdbId}-${loadedEpisode.season}-${loadedEpisode.episode}-${selectedProvider}`}
         src={currentVideoSrc}
         className="embed-iframe"
         onLoad={requestPlayback}
