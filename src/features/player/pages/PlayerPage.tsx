@@ -1,4 +1,5 @@
-import { sendEmbedMasterCommand, readEmbeddedPlaybackEvent, isEmbedMasterUrl } from '../utils/embedMasterBridge';
+import { readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
+import { useEmbedMasterAutoStart } from '../hooks/useEmbedMasterAutoStart';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
@@ -28,12 +29,10 @@ export default function PlayerPage() {
   const [selectedProvider, setSelectedProvider] = useState<string>(PROVIDERS.VIDSRC_RU);
   const [showProviderMenu, setShowProviderMenu] = useState(false);
 
-  // Only send documented commands to the supported, origin-checked provider.
-  const initializeIframe = useCallback(() => {
-    if (!isEmbedMasterUrl(iframeRef.current?.src || '')) return;
-    sendEmbedMasterCommand(iframeRef.current, 'mute');
-    sendEmbedMasterCommand(iframeRef.current, 'play');
-  }, []);
+  const { requestPlayback } = useEmbedMasterAutoStart(
+    iframeRef,
+    `${type}:${tmdbId}:${season}:${episode}:${selectedProvider}`,
+  );
 
   // Busca detalhes de Séries
   const { data: tvDetails } = useQuery({
@@ -118,10 +117,6 @@ export default function PlayerPage() {
     const handleMessage = (event: MessageEvent) => {
       const playbackEvent = readEmbeddedPlaybackEvent(event, iframeRef.current);
       if (!playbackEvent || hasEnded) return;
-      if (playbackEvent === 'ready') {
-        initializeIframe();
-        return;
-      }
       if (playbackEvent === 'ended') {
         hasEnded = true;
         setCountdownSeconds(null);
@@ -131,7 +126,7 @@ export default function PlayerPage() {
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [type, tmdbId, season, episode, selectedProvider, handleMovieEnd, handleNextManual, initializeIframe]);
+  }, [type, tmdbId, season, episode, selectedProvider, handleMovieEnd, handleNextManual]);
 
   const isSyncedMode = Boolean(state?.synced);
 
@@ -358,7 +353,7 @@ export default function PlayerPage() {
         key={`${tmdbId}-${season}-${episode}-${selectedProvider}`}
         src={currentVideoSrc}
         className="embed-iframe"
-        onLoad={initializeIframe}
+        onLoad={requestPlayback}
         style={{ width: '100%', height: '100%', border: 'none', position: 'absolute', inset: 0, zIndex: 0, willChange: 'transform', transform: 'translateZ(0)' }}
         allowFullScreen
         allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
