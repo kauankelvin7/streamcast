@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { readEmbeddedPlaybackEvent } from '../utils/embedMasterBridge';
+import { readEmbedMasterEvent, readEmbeddedPlaybackEvent, sendEmbedMasterCommand } from '../utils/embedMasterBridge';
+import { readWatchProgress, saveWatchProgress, readPlayerTime, nextEpisode } from '../utils/watchProgress';
+import type { EpisodePosition } from '../utils/watchProgress';
 import { useEmbedMasterAutoStart } from '../hooks/useEmbedMasterAutoStart';
 import { useQuery } from '@tanstack/react-query';
 import { tmdb } from '@lib/tmdb';
@@ -9,6 +11,15 @@ import { getEmbedProvider, buildPlayerUrl, supportsNativeAutonext } from '../../
 
 export default function EmbedPlayerPage() {
   const [content, setContent] = useState<SyncPayload | null>(null);
+  const [loadedPosition, setLoadedPosition] = useState<EpisodePosition | null>(null);
+  const actualPositionRef = useRef<EpisodePosition>({ season: 1, episode: 1 });
+  const latestSyncRef = useRef<string>('');
+  const lastSavedSecondsRef = useRef(0);
+  const resumeRef = useRef(0);
+  const seekSentRef = useRef(false);
+  const seekGraceUntilRef = useRef(0);
+  const playedBeforeTransitionRef = useRef(false);
+  const lastNativeTransitionRef = useRef(0);
   const iframeRef = useRef<HTMLIFrameElement>(null);
   // Allow only known provider IDs, never a user-supplied iframe URL.
   const query = new URLSearchParams(window.location.search);
@@ -17,11 +28,33 @@ export default function EmbedPlayerPage() {
   const nativeAutonext = query.get('nativeAutonext') === '1' && supportsNativeAutonext(selectedProvider);
   const { requestPlayback, lastDiagnostic } = useEmbedMasterAutoStart(
     iframeRef,
-    `${selectedProvider}:${content?.tmdbId ?? ''}:${content?.season ?? 1}:${content?.episode ?? 1}`,
+    `${selectedProvider}:${content?.tmdbId ?? ''}:${loadedPosition?.season ?? 1}:${loadedPosition?.episode ?? 1}`,
   );
 
   const handleSync = useCallback((payload: SyncPayload) => {
-    setContent(payload);
+    // A Firebase sync has a startedAt timestamp. A NEW explicit sync beats
+    // an older local bookmark, while a refresh of the same sync restores it.
+    const fingerprint = `${payload.tmdbId}:${payload.type}:${payload.startedAt}`;
+    if (fingerprint === latestSyncRef.current) return;
+    latestSyncRef.current = fingerprint;
+    const saved = new URLSearchParams(window.location.search).get('startOver') === '1'
+      ? null : readWatchProgress(payload.type, payload.tmdbId);
+    const canRestore = !!saved && saved.updatedAt > payload.startedAt;
+    const position = {
+      season: canRestore ? saved.season : (payload.season ?? 1),
+      episode: canRestore ? saved.episode : (payload.episode ?? 1),
+    };
+    actualPositionRef.current = position;
+    resumeRef.current = canRestore ? saved.seconds : 0;
+    lastSavedSecondsRef.current = canRestore ? saved.seconds : 0;
+    seekSentRef.current = false;
+    playedBeforeTransitionRef.current = false;
+    lastNativeTransitionRef.current = 0;
+    setLoadedPosition(position);
+    setContent({ ...payload, ...position });
+    if (payload.type === 'tv' || payload.type === 'anime' || payload.type === 'movie') {
+      saveWatchProgress(payload.type, payload.tmdbId, position, resumeRef.current);
+    }
   }, []);
 
   useSyncListener(handleSync);
@@ -44,12 +77,7 @@ export default function EmbedPlayerPage() {
 
   const getNext = useCallback((): { season: number; episode: number } | null => {
     if (!content || !tvDetails || !seasonDetails || (content.type !== 'tv' && content.type !== 'anime')) return null;
-    const currentSeason = content.season ?? 1;
-    const currentEpisode = content.episode ?? 1;
-
-    if (currentEpisode < totalEpisodes) return { season: currentSeason, episode: currentEpisode + 1 };
-    if (currentSeason < totalSeasons) return { season: currentSeason + 1, episode: 1 };
-    return null;
+    return nextEpisode(actualPositionRef.current, totalEpisodes, totalSeasons);
   }, [content, totalEpisodes, totalSeasons, tvDetails, seasonDetails]);
 
   const handleMovieEnd = useCallback(() => {
@@ -72,6 +100,61 @@ export default function EmbedPlayerPage() {
     })();
   }, [content]);
 
+  const setCurrentEpisode = useCallback((next: EpisodePosition, remountPlayer: boolean) => {
+    if (!content) return;
+    actualPositionRef.current = next;
+    lastSavedSecondsRef.current = 0;
+    resumeRef.current = 0;
+    seekSentRef.current = false;
+    playedBeforeTransitionRef.current = false;
+    saveWatchProgress(content.type, content.tmdbId, next);
+    setContent(previous => previous ? { ...previous, ...next } : previous);
+    // Native provider transition must keep the original iframe alive.
+    if (remountPlayer) setLoadedPosition(next);
+  }, [content]);
+
+  // Capture ProviderJS time and native episode switches within the same iframe.
+  // This route is often kept open for many hours, so the Firebase initial
+  // episode is NOT an accurate measure of the current playback episode.
+  useEffect(() => {
+    if (!content) return;
+    const onProgressMessage = (event: MessageEvent) => {
+      const message = readEmbedMasterEvent(event, iframeRef.current);
+      if (!message) return;
+      if (message.event === 'play' || message.event === 'start') {
+        playedBeforeTransitionRef.current = true;
+      }
+      if ((message.event === 'next' || message.event === 'new')
+        && (content.type === 'tv' || content.type === 'anime')
+        && playedBeforeTransitionRef.current
+        && Date.now() - lastNativeTransitionRef.current > 3000) {
+        const next = getNext();
+        if (next) {
+          lastNativeTransitionRef.current = Date.now();
+          setCurrentEpisode(next, false);
+        }
+      }
+      if (message.event !== 'time') return;
+      const seconds = readPlayerTime(message.info);
+      if (seconds === null) return;
+      const savedSeconds = resumeRef.current;
+      if (!seekSentRef.current && savedSeconds >= 30 && seconds < savedSeconds - 8 && seconds < 20) {
+        seekSentRef.current = true;
+        seekGraceUntilRef.current = Date.now() + 12000;
+        sendEmbedMasterCommand(iframeRef.current, 'seek', Math.floor(savedSeconds));
+        return;
+      }
+      if (savedSeconds >= 30 && seconds < savedSeconds - 10 && Date.now() < seekGraceUntilRef.current) return;
+      resumeRef.current = 0;
+      if (Math.abs(seconds - lastSavedSecondsRef.current) >= 5) {
+        lastSavedSecondsRef.current = seconds;
+        saveWatchProgress(content.type, content.tmdbId, actualPositionRef.current, seconds);
+      }
+    };
+    window.addEventListener('message', onProgressMessage);
+    return () => window.removeEventListener('message', onProgressMessage);
+  }, [content, getNext, setCurrentEpisode]);
+
   // Advance only when the actual provider reports media end, never by wall-clock.
   useEffect(() => {
     if (!content || content.type === 'youtube') return;
@@ -81,17 +164,21 @@ export default function EmbedPlayerPage() {
       if (!playbackEvent || ended) return;
       if (playbackEvent !== 'ended') return;
       // The provider advances inside its own iframe; never remount it on end.
-      if (nativeAutonext && (content.type === 'tv' || content.type === 'anime')) return;
+      if (nativeAutonext && (content.type === 'tv' || content.type === 'anime')) {
+        const next = getNext();
+        if (next) setCurrentEpisode(next, false);
+        return;
+      }
       ended = true;
       if (content.type === 'movie') handleMovieEnd();
       else {
         const next = getNext();
-        if (next) setContent(previous => previous ? { ...previous, season: next.season, episode: next.episode } : previous);
+        if (next) setCurrentEpisode(next, true);
       }
     };
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [content, getNext, handleMovieEnd, nativeAutonext]);
+  }, [content, getNext, handleMovieEnd, nativeAutonext, setCurrentEpisode]);
 
   // Sem conteúdo ainda
   if (!content) {
@@ -131,8 +218,8 @@ export default function EmbedPlayerPage() {
         type: content.type as any,
         id: String(content.tmdbId),
         tmdb: content.tmdbId,
-        season: content.season || 1,
-        episode: content.episode || 1,
+        season: loadedPosition?.season ?? content.season ?? 1,
+        episode: loadedPosition?.episode ?? content.episode ?? 1,
         provider: selectedProvider,
         nativeAutonext,
         url: content.url ?? undefined
@@ -164,7 +251,7 @@ export default function EmbedPlayerPage() {
       <iframe
         ref={iframeRef}
         onLoad={requestPlayback}
-        key={`${content.tmdbId}-${content.season}-${content.episode}`}
+        key={`${content.tmdbId}-${loadedPosition?.season ?? 1}-${loadedPosition?.episode ?? 1}`}
         src={iframeSrc}
         className="embed-iframe"
         style={{ width: '100%', height: '100%', border: 'none', willChange: 'transform', transform: 'translateZ(0)' }}
