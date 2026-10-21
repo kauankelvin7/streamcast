@@ -4,12 +4,26 @@ import type { VideoSource } from '../types';
 export const PROVIDERS = {
   VIDSRC_RU: 'VidSrc / EmbedMaster',
   VIDSRC_CC: 'VidSrc CC (Ultra HD)',
+  VIDSRC_TW: 'VidSrc TW (eventos documentados)',
   VIDSRC_ME: 'VidSrc Me',
   SUPEREMBED: 'SuperEmbed (Multi)',
   TWO_EMBED: '2Embed VIP',
 } as const;
 
 export type ProviderName = typeof PROVIDERS[keyof typeof PROVIDERS];
+
+/** Stable, allowlisted provider IDs for the /embed?provider=... query. */
+export const EMBED_PROVIDER_BY_ID: Record<string, ProviderName> = {
+  embedmaster: PROVIDERS.VIDSRC_RU,
+  'vidsrc-cc': PROVIDERS.VIDSRC_CC,
+  'vidsrc-tw': PROVIDERS.VIDSRC_TW,
+  'vidsrc-me': PROVIDERS.VIDSRC_ME,
+  multiembed: PROVIDERS.SUPEREMBED,
+  '2embed': PROVIDERS.TWO_EMBED,
+};
+export function getEmbedProvider(id: string | null): ProviderName {
+  return (id && EMBED_PROVIDER_BY_ID[id]) || PROVIDERS.VIDSRC_RU;
+}
 
 export function buildPlayerUrl(video: VideoSource): string {
   if (!video) return '';
@@ -19,6 +33,17 @@ export function buildPlayerUrl(video: VideoSource): string {
   const season = video.season ?? 1;
   const episode = video.episode ?? 1;
   const provider = video.provider || PROVIDERS.VIDSRC_RU;
+
+  // Provider with documented completion events (VidSrc TW).
+  // Disable provider autonext to avoid racing with Streamcast's season navigation.
+  if (provider === PROVIDERS.VIDSRC_TW) {
+    const url = new URL(isSeries
+      ? `https://vidsrc.tw/embed/tv/${id}/${season}/${episode}`
+      : `https://vidsrc.tw/embed/movie/${id}`);
+    url.searchParams.set('autoplay', '1');
+    if (isSeries) url.searchParams.set('autonext', '0');
+    return url.toString();
+  }
 
   // 1. Provedor VidSrc CC (Alta estabilidade e legendas em português)
   if (provider === PROVIDERS.VIDSRC_CC) {
