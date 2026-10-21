@@ -32,9 +32,10 @@ export default function EmbedPlayerPage() {
   });
 
   const { data: seasonDetails } = useQuery({
-    queryKey: ['tv', content?.tmdbId, 'season', content?.season],
+    queryKey: ['tv', content?.tmdbId, 'season', content?.season ?? 1],
     queryFn: () => tmdb.getTVSeason(Number(content!.tmdbId), content!.season ?? 1),
-    enabled: !!content && (content.type === 'tv' || content.type === 'anime') && !!content.season,
+    // A synced TV payload may omit season (null), which means season 1.
+    enabled: !!content && (content.type === 'tv' || content.type === 'anime'),
   });
 
   const totalSeasons  = tvDetails?.number_of_seasons ?? 1;
