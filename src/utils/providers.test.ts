@@ -27,7 +27,7 @@ describe('provider URL and embed selection', () => {
     const cc = buildPlayerUrl({ ...video, provider: PROVIDERS.VIDSRC_CC });
     expect(cc).toBe('https://vidsrc.cc/v2/embed/tv/1399/2/3?autoPlay=true');
     const me = buildPlayerUrl({ ...video, provider: PROVIDERS.VIDSRC_ME });
-    expect(me).toContain('https://vidsrc.me/embed/tv?tmdb=1399&season=2&episode=3&autoplay=1');
+    expect(me).toBe('https://vsembed.ru/embed/tv/1399/2/3?autoplay=1&autonext=0');
     expect(buildPlayerUrl({ ...video, provider: PROVIDERS.SUPEREMBED })).toContain('multiembed.mov');
     expect(buildPlayerUrl({ ...video, provider: PROVIDERS.TWO_EMBED })).toContain('2embed.cc');
   });
