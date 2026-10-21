@@ -342,6 +342,17 @@ export default function PlayerPage() {
       )}
 
       {/* ── PLAYER ── */}
+      {type === 'direct' && state?.url ? (
+        <video
+          key={state.url}
+          src={state.url}
+          autoPlay
+          muted
+          playsInline
+          controls
+          style={{ width: '100%', height: '100%', position: 'absolute', inset: 0, background: '#000' }}
+        />
+      ) : (
       <iframe
         ref={iframeRef}
         key={`${tmdbId}-${season}-${episode}-${selectedProvider}`}
@@ -353,6 +364,7 @@ export default function PlayerPage() {
         allow="autoplay *; fullscreen *; picture-in-picture *; encrypted-media *; accelerometer *; gyroscope *; web-share *"
         referrerPolicy="strict-origin-when-cross-origin"
       />
+      )}
     </div>
   );
 }
