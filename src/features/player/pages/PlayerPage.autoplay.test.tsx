@@ -19,10 +19,10 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }));
 
-function sendEvent(frame: HTMLIFrameElement, event: string) {
+function sendEvent(frame: HTMLIFrameElement, event: string, origin = 'https://embedmaster.link') {
   act(() => {
     window.dispatchEvent(new MessageEvent('message', {
-      origin: 'https://embedmaster.link',
+      origin,
       source: frame.contentWindow,
       data: { source: 'embedmaster_player', event },
     }));
@@ -67,11 +67,24 @@ describe('/watch episode-to-episode autoplay', () => {
     // Provider-native autoplay countdown changes the video without changing React state.
     sendEvent(frame, 'new');
     expect(view.container.querySelector('iframe')).toBe(frame);
-    expect(post).toHaveBeenCalledTimes(initialCommands + 2);
+    expect(post).toHaveBeenCalledTimes(initialCommands + 4);
     expect(post).toHaveBeenNthCalledWith(initialCommands + 1,
       { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link');
-    expect(post).toHaveBeenNthCalledWith(initialCommands + 2,
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 4,
       { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link');
+    post.mockRestore();
+  });
+
+  it('rearms autoplay when PlayerJS new arrives from the redirected player origin', () => {
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    const count = post.mock.calls.length;
+    sendEvent(frame, 'new', 'https://embdmstrplayer.com');
+    expect(post.mock.calls.length).toBe(count + 4);
+    expect(view.container.querySelector('iframe')).toBe(frame);
     post.mockRestore();
   });
 
