@@ -1,5 +1,6 @@
 import { act, cleanup, fireEvent, render } from '@testing-library/react';
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { readWatchProgress } from '../utils/watchProgress';
 import PlayerPage from './PlayerPage';
 
 vi.mock('react-router-dom', () => ({
@@ -19,16 +20,17 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }));
 
-function sendEvent(frame: HTMLIFrameElement, event: string, origin = 'https://embedmaster.link') {
+function sendEvent(frame: HTMLIFrameElement, event: string, origin = 'https://embedmaster.link', info?: unknown) {
   act(() => {
     window.dispatchEvent(new MessageEvent('message', {
       origin,
       source: frame.contentWindow,
-      data: { source: 'embedmaster_player', event },
+      data: { source: 'embedmaster_player', event, info },
     }));
   });
 }
 
+beforeEach(() => localStorage.clear());
 afterEach(() => {
   cleanup();
   window.history.replaceState(null, '', '/');
@@ -104,6 +106,40 @@ describe('/watch episode-to-episode autoplay', () => {
     sendEvent(frame, 'play', 'https://embdmstrplayer.com');
     expect(overlay.textContent).toContain('Playback confirmed');
     expect(sessionStorage.getItem('streamcast-autoplay-diagnostics')).toContain('Playback confirmed');
+  });
+
+  it('bookmarks a provider-native episode change without remounting, then restores it after reload', () => {
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    expect(frame.src).toContain('/tv/1399/3/1?');
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    sendEvent(frame, 'next', 'https://embdmstrplayer.com');
+    sendEvent(frame, 'new', 'https://embdmstrplayer.com');
+    expect(view.container.querySelector('iframe')).toBe(frame);
+    expect(readWatchProgress('tv', '1399')).toMatchObject({ season: 3, episode: 2, seconds: 0 });
+    view.unmount();
+    const restored = render(<PlayerPage />);
+    expect(restored.container.querySelector('iframe')?.src).toContain('/tv/1399/3/2?');
+    restored.unmount();
+  });
+
+  it('bookmarks seconds and sends documented seek after page reload', () => {
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    sendEvent(frame, 'time', 'https://embdmstrplayer.com', 142);
+    expect(readWatchProgress('tv', 1399)?.seconds).toBe(142);
+    view.unmount();
+    const restored = render(<PlayerPage />);
+    const newFrame = restored.container.querySelector('iframe')!;
+    const post = vi.spyOn(newFrame.contentWindow!, 'postMessage');
+    sendEvent(newFrame, 'time', 'https://embdmstrplayer.com', 1);
+    expect(post).toHaveBeenCalledWith(
+      { source: 'embedmaster_player_command', command: 'seek', value: 142 },
+      'https://embdmstrplayer.com'
+    );
+    expect(readWatchProgress('tv', 1399)?.seconds).toBe(142);
+    post.mockRestore();
+    restored.unmount();
   });
 
 });
