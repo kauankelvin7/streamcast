@@ -29,7 +29,7 @@ export default function PlayerPage() {
   const [selectedProvider, setSelectedProvider] = useState<string>(PROVIDERS.VIDSRC_RU);
   const [showProviderMenu, setShowProviderMenu] = useState(false);
 
-  const { requestPlayback } = useEmbedMasterAutoStart(
+  const { requestPlayback, lastDiagnostic } = useEmbedMasterAutoStart(
     iframeRef,
     `${type}:${tmdbId}:${season}:${episode}:${selectedProvider}`,
   );
@@ -333,6 +333,17 @@ export default function PlayerPage() {
             </button>
           </div>
           <style>{`@keyframes slide-up { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }`}</style>
+        </div>
+      )}
+
+      {new URLSearchParams(window.location.search).get('autoplayDebug') === '1' && (
+        <div data-testid="autoplay-diagnostic" style={{
+          position: 'absolute', bottom: 14, left: 16, maxWidth: 'min(560px, 90vw)',
+          zIndex: 100, pointerEvents: 'none', borderRadius: 8,
+          padding: '8px 12px', background: '#121212e8', color: '#fff',
+          fontFamily: 'monospace', fontSize: 12, overflowWrap: 'anywhere',
+        }}>
+          Autoplay: {lastDiagnostic || 'Aguardando player'}
         </div>
       )}
 

@@ -15,7 +15,7 @@ export default function EmbedPlayerPage() {
   const selectedProvider = getEmbedProvider(query.get('provider'));
   // Explicit opt-in: avoid two independent auto-advance mechanisms racing.
   const nativeAutonext = query.get('nativeAutonext') === '1' && supportsNativeAutonext(selectedProvider);
-  const { requestPlayback } = useEmbedMasterAutoStart(
+  const { requestPlayback, lastDiagnostic } = useEmbedMasterAutoStart(
     iframeRef,
     `${selectedProvider}:${content?.tmdbId ?? ''}:${content?.season ?? 1}:${content?.episode ?? 1}`,
   );
@@ -140,6 +140,16 @@ export default function EmbedPlayerPage() {
 
   return (
     <div style={{ width: '100vw', height: '100vh', background: '#000', overflow: 'hidden', willChange: 'transform', transform: 'translateZ(0)' }}>
+      {new URLSearchParams(window.location.search).get('autoplayDebug') === '1' && (
+        <div data-testid="autoplay-diagnostic" style={{
+          position: 'fixed', zIndex: 1000, bottom: 14, left: 16,
+          maxWidth: 'min(560px, 90vw)', pointerEvents: 'none',
+          borderRadius: 8, padding: '8px 12px', background: '#121212e8',
+          color: '#fff', fontFamily: 'monospace', fontSize: 12, overflowWrap: 'anywhere',
+        }}>
+          Autoplay: {lastDiagnostic || 'Aguardando player'}
+        </div>
+      )}
       {content.type === 'direct' && content.url ? (
         <video
           key={content.url}

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isEmbedMasterUrl, sendEmbedMasterCommand, readEmbedMasterEvent, readEmbeddedPlaybackEvent, EMBEDMASTER_ORIGIN } from './embedMasterBridge';
+import { isEmbedMasterUrl, sendEmbedMasterCommand, readEmbedMasterEvent, readEmbeddedPlaybackEvent, EMBEDMASTER_ORIGIN, EMBEDMASTER_PLAYER_ORIGIN } from './embedMasterBridge';
 
 describe('EmbedMaster bridge', () => {
   it('only accepts the documented provider origin', () => {
@@ -13,12 +13,17 @@ describe('EmbedMaster bridge', () => {
     sendEmbedMasterCommand(frame, 'play');
     expect(postMessage).toHaveBeenCalledWith({ source: 'embedmaster_player_command', command: 'mute' }, EMBEDMASTER_ORIGIN);
     expect(postMessage).toHaveBeenCalledWith({ source: 'embedmaster_player_command', command: 'play' }, EMBEDMASTER_ORIGIN);
+    expect(postMessage).toHaveBeenCalledWith({ source: 'embedmaster_player_command', command: 'mute' }, EMBEDMASTER_PLAYER_ORIGIN);
+    expect(postMessage).toHaveBeenCalledWith({ source: 'embedmaster_player_command', command: 'play' }, EMBEDMASTER_PLAYER_ORIGIN);
+    expect(postMessage).toHaveBeenCalledTimes(4);
   });
   it('ignores spoofed and unrelated postMessage events', () => {
     const win = {} as Window;
     const frame = { src: 'https://embedmaster.link/tv/1/1/1', contentWindow: win } as HTMLIFrameElement;
     const valid = { origin: EMBEDMASTER_ORIGIN, source: win, data: { source: 'embedmaster_player', event: 'ended' } } as unknown as MessageEvent;
     expect(readEmbedMasterEvent(valid, frame)?.event).toBe('ended');
+    expect(readEmbedMasterEvent({ ...valid, origin: EMBEDMASTER_PLAYER_ORIGIN }, frame)?.event).toBe('ended');
+    expect(readEmbedMasterEvent({ ...valid, origin: 'https://embdmstrplayer.com.evil.example' }, frame)).toBeNull();
     expect(readEmbedMasterEvent({ ...valid, origin: 'https://evil.test' }, frame)).toBeNull();
     expect(readEmbedMasterEvent({ ...valid, source: ({} as Window) }, frame)).toBeNull();
     expect(readEmbedMasterEvent({ ...valid, data: { event: 'ended' } }, frame)).toBeNull();
@@ -28,6 +33,7 @@ describe('EmbedMaster bridge', () => {
     const frame = { src: 'https://embedmaster.link/tv/1399/1/1', contentWindow: win } as HTMLIFrameElement;
     const event = { origin: EMBEDMASTER_ORIGIN, source: win, data: { source: 'embedmaster_player', event: 'end' } } as MessageEvent;
     expect(readEmbeddedPlaybackEvent(event, frame)).toBe('ended');
+    expect(readEmbeddedPlaybackEvent({ ...event, origin: EMBEDMASTER_PLAYER_ORIGIN }, frame)).toBe('ended');
     expect(readEmbeddedPlaybackEvent({ ...event, data: { source: 'embedmaster_player', event: 'finish' } }, frame)).toBeNull();
   });
 

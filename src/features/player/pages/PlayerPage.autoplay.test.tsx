@@ -19,17 +19,21 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }));
 
-function sendEvent(frame: HTMLIFrameElement, event: string) {
+function sendEvent(frame: HTMLIFrameElement, event: string, origin = 'https://embedmaster.link') {
   act(() => {
     window.dispatchEvent(new MessageEvent('message', {
-      origin: 'https://embedmaster.link',
+      origin,
       source: frame.contentWindow,
       data: { source: 'embedmaster_player', event },
     }));
   });
 }
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  window.history.replaceState(null, '', '/');
+  sessionStorage.removeItem('streamcast-autoplay-diagnostics');
+});
 
 describe('/watch episode-to-episode autoplay', () => {
   it('recreates the iframe, re-sends muted play, and ignores old-frame end messages', () => {
@@ -67,12 +71,39 @@ describe('/watch episode-to-episode autoplay', () => {
     // Provider-native autoplay countdown changes the video without changing React state.
     sendEvent(frame, 'new');
     expect(view.container.querySelector('iframe')).toBe(frame);
-    expect(post).toHaveBeenCalledTimes(initialCommands + 2);
+    expect(post).toHaveBeenCalledTimes(initialCommands + 4);
     expect(post).toHaveBeenNthCalledWith(initialCommands + 1,
       { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link');
-    expect(post).toHaveBeenNthCalledWith(initialCommands + 2,
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 3,
       { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link');
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 4,
+      { source: 'embedmaster_player_command', command: 'play' }, 'https://embdmstrplayer.com');
     post.mockRestore();
+  });
+
+  it('rearms autoplay when PlayerJS new arrives from the redirected player origin', () => {
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    const post = vi.spyOn(frame.contentWindow!, 'postMessage');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    const count = post.mock.calls.length;
+    sendEvent(frame, 'new', 'https://embdmstrplayer.com');
+    expect(post.mock.calls.length).toBe(count + 4);
+    expect(view.container.querySelector('iframe')).toBe(frame);
+    post.mockRestore();
+  });
+
+  it('shows a persistent on-screen diagnostic when provider scripts clear the console', () => {
+    window.history.replaceState(null, '', '/watch/tv/1399?autoplayDebug=1');
+    const view = render(<PlayerPage />);
+    const frame = view.container.querySelector('iframe')!;
+    const overlay = view.getByTestId('autoplay-diagnostic');
+    expect(overlay.textContent).toContain('Streamcast media changed');
+    fireEvent.load(frame);
+    sendEvent(frame, 'play', 'https://embdmstrplayer.com');
+    expect(overlay.textContent).toContain('Playback confirmed');
+    expect(sessionStorage.getItem('streamcast-autoplay-diagnostics')).toContain('Playback confirmed');
   });
 
 });
