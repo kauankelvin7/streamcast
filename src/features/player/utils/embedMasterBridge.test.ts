@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { isEmbedMasterUrl, sendEmbedMasterCommand, readEmbedMasterEvent, EMBEDMASTER_ORIGIN } from './embedMasterBridge';
+import { isEmbedMasterUrl, sendEmbedMasterCommand, readEmbedMasterEvent, readEmbeddedPlaybackEvent, EMBEDMASTER_ORIGIN } from './embedMasterBridge';
 
 describe('EmbedMaster bridge', () => {
   it('only accepts the documented provider origin', () => {
@@ -23,4 +23,22 @@ describe('EmbedMaster bridge', () => {
     expect(readEmbedMasterEvent({ ...valid, source: {} }, frame)).toBeNull();
     expect(readEmbedMasterEvent({ ...valid, data: { event: 'ended' } }, frame)).toBeNull();
   });
+  it('recognizes the real PlayerJS end event rather than advertisement finish', () => {
+    const win = {} as Window;
+    const frame = { src: 'https://embedmaster.link/tv/1399/1/1', contentWindow: win } as HTMLIFrameElement;
+    const event = { origin: EMBEDMASTER_ORIGIN, source: win, data: { source: 'embedmaster_player', event: 'end' } } as MessageEvent;
+    expect(readEmbeddedPlaybackEvent(event, frame)).toBe('ended');
+    expect(readEmbeddedPlaybackEvent({ ...event, data: { source: 'embedmaster_player', event: 'finish' } }, frame)).toBeNull();
+  });
+
+  it('supports VidSrc TW documented PLAYER_EVENT statuses only from active iframe', () => {
+    const win = {} as Window;
+    const frame = { src: 'https://vidsrc.tw/embed/tv/1399/1/1?autoplay=1', contentWindow: win } as HTMLIFrameElement;
+    const event = { origin: 'https://vidsrc.tw', source: win, data: { type: 'PLAYER_EVENT', data: { player_status: 'completed' } } } as MessageEvent;
+    expect(readEmbeddedPlaybackEvent(event, frame)).toBe('ended');
+    expect(readEmbeddedPlaybackEvent({ ...event, origin: 'https://vidsrc.tw.evil.test' }, frame)).toBeNull();
+    expect(readEmbeddedPlaybackEvent({ ...event, source: {} }, frame)).toBeNull();
+    expect(readEmbeddedPlaybackEvent({ ...event, data: { type: 'PLAYER_EVENT', data: { player_status: 'unknown' } } }, frame)).toBeNull();
+  });
+
 });
