@@ -15,6 +15,7 @@ export default function EmbedPlayerPage() {
   const actualPositionRef = useRef<EpisodePosition>({ season: 1, episode: 1 });
   const latestSyncRef = useRef<string>('');
   const lastSavedSecondsRef = useRef(0);
+  const lastObservedSecondsRef = useRef(0);
   const resumeRef = useRef(0);
   const seekSentRef = useRef(false);
   const seekGraceUntilRef = useRef(0);
@@ -47,6 +48,7 @@ export default function EmbedPlayerPage() {
     actualPositionRef.current = position;
     resumeRef.current = canRestore ? saved.seconds : 0;
     lastSavedSecondsRef.current = canRestore ? saved.seconds : 0;
+    lastObservedSecondsRef.current = canRestore ? saved.seconds : 0;
     seekSentRef.current = false;
     playedBeforeTransitionRef.current = false;
     lastNativeTransitionRef.current = 0;
@@ -104,6 +106,7 @@ export default function EmbedPlayerPage() {
     if (!content) return;
     actualPositionRef.current = next;
     lastSavedSecondsRef.current = 0;
+    lastObservedSecondsRef.current = 0;
     resumeRef.current = 0;
     seekSentRef.current = false;
     playedBeforeTransitionRef.current = false;
@@ -116,7 +119,7 @@ export default function EmbedPlayerPage() {
   // Flush the latest observed seconds on refresh, without shared Firebase writes.
   useEffect(() => {
     if (!content || (content.type !== 'tv' && content.type !== 'anime' && content.type !== 'movie')) return;
-    const flush = () => saveWatchProgress(content.type, content.tmdbId, actualPositionRef.current, lastSavedSecondsRef.current);
+    const flush = () => saveWatchProgress(content.type, content.tmdbId, actualPositionRef.current, lastObservedSecondsRef.current);
     window.addEventListener('pagehide', flush);
     return () => window.removeEventListener('pagehide', flush);
   }, [content?.type, content?.tmdbId]);
@@ -154,6 +157,7 @@ export default function EmbedPlayerPage() {
       }
       if (savedSeconds >= 30 && seconds < savedSeconds - 10 && Date.now() < seekGraceUntilRef.current) return;
       resumeRef.current = 0;
+      lastObservedSecondsRef.current = seconds;
       if (Math.abs(seconds - lastSavedSecondsRef.current) >= 5) {
         lastSavedSecondsRef.current = seconds;
         saveWatchProgress(content.type, content.tmdbId, actualPositionRef.current, seconds);
