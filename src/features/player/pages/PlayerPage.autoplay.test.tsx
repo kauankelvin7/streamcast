@@ -70,8 +70,10 @@ describe('/watch episode-to-episode autoplay', () => {
     expect(post).toHaveBeenCalledTimes(initialCommands + 4);
     expect(post).toHaveBeenNthCalledWith(initialCommands + 1,
       { source: 'embedmaster_player_command', command: 'mute' }, 'https://embedmaster.link');
-    expect(post).toHaveBeenNthCalledWith(initialCommands + 4,
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 3,
       { source: 'embedmaster_player_command', command: 'play' }, 'https://embedmaster.link');
+    expect(post).toHaveBeenNthCalledWith(initialCommands + 4,
+      { source: 'embedmaster_player_command', command: 'play' }, 'https://embdmstrplayer.com');
     post.mockRestore();
   });
 
