@@ -5,6 +5,7 @@ on:
     branches:
       - audit/autoplay-20261021
       - fix/embedmaster-episode-autoplay-20261021
+      - fix/embedmaster-native-next-autoplay-20261021
   workflow_dispatch:
 
 permissions:
